@@ -2,6 +2,8 @@ import re
 import os
 
 class NepStemmer():
+    """ Word stemmer for Nepali words """
+
     def __init__(self):
         self.stems_set = set()
         self.filter_set = set()
@@ -44,8 +46,9 @@ class NepStemmer():
         # Read stems and filter words from files
         self.read_stems()
 
-    # Read stems from file
     def read_stems(self):
+        """ Read stems and filter words """
+
         # Reads the word stems
         base_path = os.path.dirname(__file__)
 
@@ -67,8 +70,8 @@ class NepStemmer():
 
         self.filter_set = set(filter_stems)
 
-    # Removes suffix
     def remove_suffix(self, word):
+        """ Removes suffixes from a given word """
         for L in 2,3,4,5,6:
             if len(word) > L + 1:
                 for suf in self.suffixes[L]:
@@ -78,8 +81,9 @@ class NepStemmer():
                 break
         return word
 
-    # Tokenizes the given text
     def tokenize(self, text):
+        """ Tokenize the given text """
+
         # Removing unnecessary items
         remove_exp = re.compile("[\d]+")
         removed_text = remove_exp.sub("", text)
@@ -92,8 +96,10 @@ class NepStemmer():
         # Returns the non-empty items only
         return([word for word in words if word!=''])
 
-    # Returns the stem
+    
     def stem(self, word):
+        """ Returns the stem of the given word """
+
         word_stem = self.remove_suffix(word)
         if(word_stem in self.stems_set):
             return word_stem
@@ -102,6 +108,8 @@ class NepStemmer():
 
     # Returns stems list
     def get_stems(self, text):
+        """ Returns stem list from a given text """
+
         # Obtain tokens of the text
         tokens = self.tokenize(text)
 
@@ -109,6 +117,8 @@ class NepStemmer():
 
     # Returns known stems list
     def get_known_stems(self, text):
+        """ Returns known stems list from given text """
+
         # Obtain tokens of the text
         tokens = self.tokenize(text)
 

@@ -17,6 +17,7 @@ stemmer = NepStemmer()
 
 class NepClassifier():
     """ Class to perform the classification of nepali news """
+
     def __init__(self):
         # Base path to use
         self.base_path = os.path.dirname(__file__)
@@ -57,7 +58,7 @@ class NepClassifier():
         self.clf = None
 
     def process_corpus(self):
-        ''' 
+        """ 
             Class method to process corpus located at path provided 
             at self.data_path
 
@@ -72,7 +73,7 @@ class NepClassifier():
                     text21.txt
                     text22.txt
                 ...
-        '''
+        """
 
         # Vectors for stems
         count_vector = {}
@@ -127,10 +128,7 @@ class NepClassifier():
         pickle.dump(data, open(data_file, 'wb'))
 
     def load_corpus_info(self):
-        '''
-            Load the corpus information from the file
-            data.p located along with this script 
-        '''
+        """ Load the corpus information a file """
 
         # Load dump data
         data_file = os.path.join(self.base_path, 'data.p')
@@ -140,7 +138,7 @@ class NepClassifier():
         self.idf_vector = data['idf_vector']
 
     def load_dataset(self):
-        '''
+        """
             Load training data from the path specified by
             self.data_path
 
@@ -150,7 +148,7 @@ class NepClassifier():
                 'path' : '../data/text1.txt',
                 'category' : 'news'
             }
-        '''
+        """
 
         documents = []
         for category in Path(self.data_path).iterdir():
@@ -175,8 +173,9 @@ class NepClassifier():
         self.test_data = sample_docs[-1000:]
         self.train_data = sample_docs[:-1000]
 
-    # Compute tf for a text
     def tf_vector(self, text):
+        """ Compute tf vector for a given text """
+
         # Find stems in document
         doc_stems = stemmer.get_known_stems(text)
 
@@ -200,6 +199,8 @@ class NepClassifier():
         return(tf_vector)
 
     def compute_matrix(self, data):
+        """ Compute the input and output matrix for given documents """
+
         stems_size = len(self.stems)
         docs_size = len(data)
 
@@ -239,12 +240,8 @@ class NepClassifier():
 
         return (input_matrix, output_matrix)
     
-    # Compute tf-idf and train classifier
     def train(self):
-        '''
-            This method obtains the tf-idf matrix of the training
-            data and then trains the SVM 
-        '''
+        """ Obtain the training matrix and train theclassifier """
 
         if (not(self.stems)):
             raise Exception('Corpus info not available.')
@@ -263,9 +260,7 @@ class NepClassifier():
         joblib.dump(clf, clf_file)
     
     def load_clf(self):
-        '''
-            Loads the trained classifier from file
-        '''
+        """ Loads the trained classifier from file """
 
         if (not(self.stems)):
             self.load_dataset()
@@ -274,9 +269,8 @@ class NepClassifier():
         self.clf = joblib.load(clf_file)
 
     def tf_idf_vector(self, text):
-        '''
-            Calculates the tf-idf for a given text
-        '''
+        """ Calculates the tf-idf vector for a given text """
+
         if (not(self.stems)):
             raise Exception('Corpus info not available')       
 
@@ -290,11 +284,8 @@ class NepClassifier():
 
         return(tf_idf_vector)
 
-    # Predict the class
     def predict(self, text):
-        '''
-            Function to predict the class of given text
-        '''
+        """ Predict the class of given text """
 
         if (not(self.clf)):
             raise Exception('Classifier not loaded')
@@ -309,9 +300,7 @@ class NepClassifier():
         return (self.categories[class_id])
 
     def validate_model(self):
-        '''
-            Performs the model validation
-        '''
+        """ Performs the model validation """
 
         if (not(self.clf)):
             raise Exception('Classifier not loaded')
