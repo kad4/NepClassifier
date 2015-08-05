@@ -15,23 +15,6 @@ from stemmer import NepStemmer
 # Stemmer to use
 stemmer = NepStemmer()
 
-# Creating a logger
-logger = logging.getLogger('Classifier')
-logger.setLevel(logging.DEBUG)
-
-# create console handler and set level to debug
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-
-# create formatter
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-
-# add formatter to ch
-ch.setFormatter(formatter)
-
-# add ch to logger
-logger.addHandler(ch)
-
 class NepClassifier():
     """ Class to perform the classification of nepali news """
     def __init__(self):
@@ -91,8 +74,6 @@ class NepClassifier():
                 ...
         '''
 
-        logger.info('Processing corpus at : ' + self.data_path)
-
         # Vectors for stems
         count_vector = {}
         idf_vector_total = {}
@@ -151,8 +132,6 @@ class NepClassifier():
             data.p located along with this script 
         '''
 
-        logger.info('Loading corpus info')
-
         # Load dump data
         data_file = os.path.join(self.base_path, 'data.p')
         data = pickle.load(open(data_file, 'rb'))
@@ -172,8 +151,6 @@ class NepClassifier():
                 'category' : 'news'
             }
         '''
-
-        logger.info('Loading dataset')
 
         documents = []
         for category in Path(self.data_path).iterdir():
@@ -275,11 +252,7 @@ class NepClassifier():
         if (not(self.train_data)):
             raise Exception('Training data not selected')
 
-        logger.info('Computing feature matrix')
-
         input_matrix, output_matrix = self.compute_matrix(self.train_data)
-
-        logger.info('Training classifier')
 
         # Assign and train a SVM
         clf = svm.SVC(C = 50.0)
@@ -293,7 +266,6 @@ class NepClassifier():
         '''
             Loads the trained classifier from file
         '''
-        logger.info('Loading classifier')
 
         if (not(self.stems)):
             self.load_dataset()
@@ -341,8 +313,6 @@ class NepClassifier():
             Performs the model validation
         '''
 
-        logger.info('Validating model')
-
         if (not(self.clf)):
             raise Exception('Classifier not loaded')
 
@@ -352,13 +322,22 @@ class NepClassifier():
 
 def test_accuracy():
     clf = NepClassifier()
+    print('Processing Corpus')
     # clf.process_corpus()
-
+    
+    print('Loading corpus info')
     clf.load_corpus_info()
+
+    print('Loading dataset')
     clf.load_dataset()
     
+    print('Training classifier')
     clf.train()
+
+    print('Loading classifier')
     clf.load_clf()
+    
+    print('Validating model')
     score = clf.validate_model()
     print('Accuracy : ', score * 100, '%')
 
@@ -374,7 +353,8 @@ def main():
 
         # Loads the trained classifier
         clf.load_clf()
-
+        
+        # Predicted category
         category = clf.predict(content)
 
         print('The category is : ', category)
