@@ -300,8 +300,8 @@ class NepClassifier():
         class_id = int(output_val)
         return (self.categories[class_id])
 
-    def validate_model(self):
-        """ Performs the model validation """
+    def evaluate_model(self):
+        """ Performs the model evaluation """
 
         if (not(self.clf)):
             raise Exception('Classifier not loaded')
@@ -317,10 +317,13 @@ class NepClassifier():
             pred_output
         )
 
-        print('Accuracy : ', accuracy)
-        print('Precision : ', precision)
-        print('Recall : ', recall)
-        print('Fscore : ', fscore)
+        from statistics import mean
+
+        precision = mean(precision)
+        recall = mean(recall)
+        fscore = mean(fscore)
+        
+        return(precision, recall, fscore, accuracy)
 
 def test():
     clf = NepClassifier()
@@ -340,7 +343,12 @@ def test():
     clf.load_clf()
     
     print('Validating model')
-    clf.validate_model()
+    pre, rec, fs, acc = clf.evaluate_model()
+
+    print('Precision : ', pre)
+    print('Recall : ', rec)
+    print('fscores : ', fs)
+    print('Accuracy : ', acc)
 
 def main():
     with open('test.txt', 'r') as file:
