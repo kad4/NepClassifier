@@ -72,6 +72,7 @@ class NepStemmer():
 
     def remove_suffix(self, word):
         """ Removes suffixes from a given word """
+        
         for L in 2,3,4,5,6:
             if len(word) > L + 1:
                 for suf in self.suffixes[L]:

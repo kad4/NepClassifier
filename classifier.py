@@ -9,6 +9,7 @@ from operator import itemgetter
 import numpy as np
 from sklearn import svm
 from sklearn.externals import joblib
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 from stemmer import NepStemmer
 
@@ -81,7 +82,7 @@ class NepClassifier():
 
         total_docs = 0
 
-        for root,dirs,files in os.walk(self.data_path):
+        for root, dirs, files in os.walk(self.data_path):
             for file_path in files:
                 abs_path = os.path.join(self.base_path, root, file_path)
 
@@ -95,7 +96,7 @@ class NepClassifier():
 
                 # Add the count of stems
                 for stem in doc_stems:
-                    count_vector[stem] = count_vector.get(stem,0) + 1
+                    count_vector[stem] = count_vector.get(stem, 0) + 1
 
                 for stem in doc_stems_set:
                     idf_vector_total[stem] = idf_vector_total.get(stem, 0) + 1
@@ -307,9 +308,21 @@ class NepClassifier():
 
         input_matrix, output_matrix = self.compute_matrix(self.train_data)
 
-        return(self.clf.score(input_matrix, output_matrix))
+        pred_output = self.clf.predict(input_matrix)
 
-def test_accuracy():
+        accuracy = accuracy_score(output_matrix, pred_output)
+
+        precision, recall, fscore, __ = precision_recall_fscore_support(
+            output_matrix,
+            pred_output
+        )
+
+        print('Accuracy : ', accuracy)
+        print('Precision : ', precision)
+        print('Recall : ', recall)
+        print('Fscore : ', fscore)
+
+def test():
     clf = NepClassifier()
     print('Processing Corpus')
     # clf.process_corpus()
@@ -327,8 +340,7 @@ def test_accuracy():
     clf.load_clf()
     
     print('Validating model')
-    score = clf.validate_model()
-    print('Accuracy : ', score * 100, '%')
+    clf.validate_model()
 
 def main():
     with open('test.txt', 'r') as file:
