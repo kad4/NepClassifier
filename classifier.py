@@ -5,6 +5,7 @@ import logging
 from math import log
 from pathlib import Path
 from operator import itemgetter
+from statistics import mean
 
 import numpy as np
 from sklearn import svm
@@ -27,10 +28,10 @@ class NepClassifier():
         self.data_path = os.path.join(self.base_path, 'data')
 
         # Training data size
-        self.train_num = 10000
+        self.train_data_size = 10000
         
         # Test data size
-        self.test_num = 1000
+        self.test_data_size = 1000
 
         # Maximum stems to use
         self.max_stems = 1000
@@ -168,11 +169,11 @@ class NepClassifier():
 
         sample_docs = random.sample(
             documents,
-            self.train_num + self.test_num
+            self.train_data_size + self.test_data_size
         )
         
-        self.test_data = sample_docs[-1000:]
-        self.train_data = sample_docs[:-1000]
+        self.test_data = sample_docs[-self.test_data_size:]
+        self.train_data = sample_docs[:-self.test_data_size]
 
     def tf_vector(self, text):
         """ Compute tf vector for a given text """
@@ -306,7 +307,7 @@ class NepClassifier():
         if (not(self.clf)):
             raise Exception('Classifier not loaded')
 
-        input_matrix, output_matrix = self.compute_matrix(self.train_data)
+        input_matrix, output_matrix = self.compute_matrix(self.test_data)
 
         pred_output = self.clf.predict(input_matrix)
 
@@ -317,41 +318,14 @@ class NepClassifier():
             pred_output
         )
 
-        from statistics import mean
-
         precision = mean(precision)
         recall = mean(recall)
         fscore = mean(fscore)
         
         return(precision, recall, fscore, accuracy)
 
-def test():
-    clf = NepClassifier()
-    print('Processing Corpus')
-    # clf.process_corpus()
-    
-    print('Loading corpus info')
-    clf.load_corpus_info()
-
-    print('Loading dataset')
-    clf.load_dataset()
-    
-    print('Training classifier')
-    clf.train()
-
-    print('Loading classifier')
-    clf.load_clf()
-    
-    print('Validating model')
-    pre, rec, fs, acc = clf.evaluate_model()
-
-    print('Precision : ', pre)
-    print('Recall : ', rec)
-    print('fscores : ', fs)
-    print('Accuracy : ', acc)
-
-def main():
-    with open('test.txt', 'r') as file:
+if __name__ == '__main__':
+	with open('test.txt', 'r') as file:
         content = file.read()
 
         # Initialize the classifier
@@ -367,6 +341,3 @@ def main():
         category = clf.predict(content)
 
         print('The category is : ', category)
-
-if __name__ == '__main__':
-    main()
