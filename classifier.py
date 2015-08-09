@@ -11,21 +11,31 @@ import numpy as np
 from sklearn import svm
 from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from sklearn.metrics import confusion_matrix
 
 from stemmer import NepStemmer
 
-# Stemmer to use
-stemmer = NepStemmer()
-
 class NepClassifier():
-    """ Class to perform the classification of nepali news """
+    """ 
+        Classifier for Nepali News
+
+        It categorizes the given text in one among the following groups:
+
+        economy, entertainment, news, politics, sports, world
+    """
 
     def __init__(self):
+        # Stemmer to use
+        self.stemmer = NepStemmer()
+
         # Base path to use
         self.base_path = os.path.dirname(__file__)
 
-        # Folder containg data
-        self.data_path = os.path.join(self.base_path, 'data')
+        # Folder containing data
+        self.folder_path = os.path.join(self.base_path, 'data')
+
+        # File containing the corpus info
+        self.data_path = os.path.join(self.base_path, 'data.p')
 
         # Training data size
         self.train_data_size = 10000
@@ -62,7 +72,7 @@ class NepClassifier():
     def process_corpus(self):
         """ 
             Class method to process corpus located at path provided 
-            at self.data_path
+            at self.folder_path
 
             The data must be organized as utf-8 encoded raw text file
             having following structure
@@ -83,7 +93,7 @@ class NepClassifier():
 
         total_docs = 0
 
-        for root, dirs, files in os.walk(self.data_path):
+        for root, dirs, files in os.walk(self.folder_path):
             for file_path in files:
                 abs_path = os.path.join(self.base_path, root, file_path)
 
@@ -92,7 +102,7 @@ class NepClassifier():
                 file.close()
 
                 # Obtain known stems
-                doc_stems = stemmer.get_known_stems(content)
+                doc_stems = self.stemmer.get_known_stems(content)
                 doc_stems_set = set(doc_stems)
 
                 # Add the count of stems
@@ -126,15 +136,13 @@ class NepClassifier():
             'idf_vector' : idf_vector
         }
 
-        data_file = os.path.join(self.base_path, 'data.p')
-        pickle.dump(data, open(data_file, 'wb'))
+        pickle.dump(data, open(self.data_path, 'wb'))
 
     def load_corpus_info(self):
         """ Load the corpus information a file """
 
         # Load dump data
-        data_file = os.path.join(self.base_path, 'data.p')
-        data = pickle.load(open(data_file, 'rb'))
+        data = pickle.load(open(self.data_path, 'rb'))
         
         self.stems = data['stems']
         self.idf_vector = data['idf_vector']
@@ -142,7 +150,7 @@ class NepClassifier():
     def load_dataset(self):
         """
             Load training data from the path specified by
-            self.data_path
+            self.folder_path
 
             The files are loaded as a dictionary similar to one
             given below
@@ -153,7 +161,7 @@ class NepClassifier():
         """
 
         documents = []
-        for category in Path(self.data_path).iterdir():
+        for category in Path(self.folder_path).iterdir():
 
             # Convert path to posix notation
             category_name = category.as_posix().split('/')[-1]
@@ -179,7 +187,7 @@ class NepClassifier():
         """ Compute tf vector for a given text """
 
         # Find stems in document
-        doc_stems = stemmer.get_known_stems(text)
+        doc_stems = self.stemmer.get_known_stems(text)
 
         # Contruct dictionary of stems
         doc_vector = {}
@@ -321,8 +329,10 @@ class NepClassifier():
         precision = mean(precision)
         recall = mean(recall)
         fscore = mean(fscore)
+
+        conf_mat = confusion_matrix(output_matrix, pred_output)
         
-        return(precision, recall, fscore, accuracy)
+        return(precision, recall, fscore, accuracy, conf_mat)
 
 if __name__ == '__main__':
 	with open('test.txt', 'r') as file:
