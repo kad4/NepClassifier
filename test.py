@@ -1,20 +1,8 @@
 from classifier import NepClassifier
 
-clf = NepClassifier()
+def run_batch(total_runs = 1):
+	clf = NepClassifier()
 
-def single_run():
-    print('Training classifier')
-    clf.train()
-
-    print('Loading classifier')
-    clf.load_clf()
-    
-    print('Evaluating model')
-    pre, rec, fs, acc, __ = clf.evaluate_model()
-
-    return (pre, rec, fs, acc)
-
-def batch_run(total_runs = 4):
     # print('Processing corpus')
     # clf.process_corpus()
 
@@ -53,7 +41,12 @@ def batch_run(total_runs = 4):
     print(accs)
 
 def compare():
-    clf = NepClassifier()
+	clf = NepClassifier()
+
+	# print('Processing corpus')
+    # clf.process_corpus()
+
+    # Fixed dataset
     clf.load_dataset()
 
     # Baseline method
@@ -63,10 +56,11 @@ def compare():
     clf.train()
     clf.load_clf()
 
-    print('Evalutaing model')
+    print('Evaluating model')
     prec, rec, fs, acc, conf_mat = clf.evaluate_model()
 
     print('Accuracy of baseline : ', acc)
+    print('Confusion Matrix :\n', conf_mat)
     
     # New method
 
