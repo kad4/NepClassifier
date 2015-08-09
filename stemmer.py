@@ -2,7 +2,7 @@ import re
 import os
 
 class NepStemmer():
-    """ Word stemmer for Nepali words """
+    """ Stemmer for Nepali words """
 
     def __init__(self):
         self.stems_set = set()
@@ -134,6 +134,3 @@ class NepStemmer():
         ]
 
         return(known_stem)
-
-
-        
