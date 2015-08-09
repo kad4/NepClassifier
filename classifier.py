@@ -32,7 +32,7 @@ class NepClassifier():
         self.base_path = os.path.dirname(__file__)
 
         # Folder containing data
-        self.folder_path = os.path.join(self.base_path, 'data')
+        self.corpus_path = os.path.join(self.base_path, 'data')
 
         # File containing the corpus info
         self.data_path = os.path.join(self.base_path, 'data.p')
@@ -69,10 +69,13 @@ class NepClassifier():
         # Classifier
         self.clf = None
 
+        # Regularization parameter
+        self.C = 50.0
+
     def process_corpus(self):
         """ 
             Class method to process corpus located at path provided 
-            at self.folder_path
+            at self.corpus_path
 
             The data must be organized as utf-8 encoded raw text file
             having following structure
@@ -93,7 +96,7 @@ class NepClassifier():
 
         total_docs = 0
 
-        for root, dirs, files in os.walk(self.folder_path):
+        for root, dirs, files in os.walk(self.corpus_path):
             for file_path in files:
                 abs_path = os.path.join(self.base_path, root, file_path)
 
@@ -150,7 +153,7 @@ class NepClassifier():
     def load_dataset(self):
         """
             Load training data from the path specified by
-            self.folder_path
+            self.corpus_path
 
             The files are loaded as a dictionary similar to one
             given below
@@ -161,7 +164,7 @@ class NepClassifier():
         """
 
         documents = []
-        for category in Path(self.folder_path).iterdir():
+        for category in Path(self.corpus_path).iterdir():
 
             # Convert path to posix notation
             category_name = category.as_posix().split('/')[-1]
@@ -262,7 +265,7 @@ class NepClassifier():
         input_matrix, output_matrix = self.compute_matrix(self.train_data)
 
         # Assign and train a SVM
-        clf = svm.SVC(C = 50.0)
+        clf = svm.SVC(self.C)
         clf.fit(input_matrix, output_matrix)
 
         # Dumping extracted data
