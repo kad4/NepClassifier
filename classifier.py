@@ -338,7 +338,7 @@ class NepClassifier():
         return(precision, recall, fscore, accuracy, conf_mat)
 
 if __name__ == '__main__':
-	with open('test.txt', 'r') as file:
+    with open('test.txt', 'r') as file:
         content = file.read()
 
         # Initialize the classifier
