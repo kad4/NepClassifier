@@ -1,7 +1,7 @@
 from classifier import NepClassifier
 
 def run_batch(total_runs = 1):
-	clf = NepClassifier()
+    clf = NepClassifier()
 
     # print('Processing corpus')
     # clf.process_corpus()
@@ -16,17 +16,20 @@ def run_batch(total_runs = 1):
 
     for i in range(total_runs):
     	# Load dataset 
-    	clf.load_dataset()
+        clf.load_dataset()
 
     	# Train and evaluate 
-    	pre, rec, fs, acc = single_run()
+        clf.train()
 
-    	pres.append(pre)
-    	recs.append(rec)
-    	fss.append(fs)
-    	accs.append(acc)
+        clf.load_clf()
+        pre, rec, fs, acc, __ = clf.evaluate_model()
 
-    	print('Accuracy : ', acc)
+        pres.append(pre)
+        recs.append(rec)
+        fss.append(fs)
+        accs.append(acc)
+
+        print('Accuracy : ', acc)
 
     print('Precisions : ')
     print(pres)
@@ -41,7 +44,7 @@ def run_batch(total_runs = 1):
     print(accs)
 
 def compare():
-	clf = NepClassifier()
+    clf = NepClassifier()
 
 	# print('Processing corpus')
     # clf.process_corpus()
@@ -65,4 +68,4 @@ def compare():
     # New method
 
 if __name__ == '__main__':
-    compare()
+    run_batch()

@@ -96,7 +96,6 @@ class NepStemmer():
 
         # Returns the non-empty items only
         return([word for word in words if word!=''])
-
     
     def stem(self, word):
         """ Returns the stem of the given word """
@@ -107,7 +106,6 @@ class NepStemmer():
         else:
             return word
 
-    # Returns stems list
     def get_stems(self, text):
         """ Returns stem list from a given text """
 
@@ -116,7 +114,6 @@ class NepStemmer():
 
         return([self.stem(token) for token in tokens])
 
-    # Returns known stems list
     def get_known_stems(self, text):
         """ Returns known stems list from given text """
 

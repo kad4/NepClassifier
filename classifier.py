@@ -13,7 +13,7 @@ from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.metrics import confusion_matrix
 
-from stemmer import NepStemmer
+from .stemmer import NepStemmer
 
 class NepClassifier():
     """ 
@@ -339,18 +339,18 @@ class NepClassifier():
 
 if __name__ == '__main__':
 	with open('test.txt', 'r') as file:
-            content = file.read()
+        content = file.read()
 
-            # Initialize the classifier
-            clf = NepClassifier()
+        # Initialize the classifier
+        clf = NepClassifier()
 
-            # Loads the corpus info
-            clf.load_corpus_info()
+        # Loads the corpus info
+        clf.load_corpus_info()
 
-            # Loads the trained classifier
-            clf.load_clf()
-            
-            # Predicted category
-            category = clf.predict(content)
+        # Loads the trained classifier
+        clf.load_clf()
+        
+        # Predicted category
+        category = clf.predict(content)
 
-            print('The category is : ', category)
+        print('The category is : ', category)
