@@ -113,21 +113,3 @@ class NepStemmer():
         tokens = self.tokenize(text)
 
         return([self.stem(token) for token in tokens])
-
-    def get_known_stems(self, text):
-        """ Returns known stems list from given text """
-
-        # Obtain tokens of the text
-        tokens = self.tokenize(text)
-
-        # Obtain the stem list
-        stems_list = [self.stem(token) for token in tokens]
-
-        known_stem = [
-            stem 
-            for stem in stems_list 
-            if stem in self.stems_set
-            and stem not in self.filter_set
-        ]
-
-        return(known_stem)

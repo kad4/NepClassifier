@@ -13,7 +13,7 @@ from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.metrics import confusion_matrix
 
-from .stemmer import NepStemmer
+from stemmer import NepStemmer
 
 class NepClassifier():
     """ 
@@ -105,7 +105,7 @@ class NepClassifier():
                 file.close()
 
                 # Obtain known stems
-                doc_stems = self.stemmer.get_known_stems(content)
+                doc_stems = self.stemmer.get_stems(content)
                 doc_stems_set = set(doc_stems)
 
                 # Add the count of stems
@@ -190,7 +190,7 @@ class NepClassifier():
         """ Compute tf vector for a given text """
 
         # Find stems in document
-        doc_stems = self.stemmer.get_known_stems(text)
+        doc_stems = self.stemmer.get_stems(text)
 
         # Contruct dictionary of stems
         doc_vector = {}
