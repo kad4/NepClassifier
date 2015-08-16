@@ -1,4 +1,4 @@
-from classifier import NepClassifier
+from NepClassifier import NepClassifier
 
 def run_batch(total_runs = 1):
     clf = NepClassifier()
