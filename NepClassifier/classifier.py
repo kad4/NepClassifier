@@ -1,10 +1,6 @@
 import os
 import random
-import pickle
-import logging
-from math import log
 from pathlib import Path
-from operator import itemgetter
 from statistics import mean
 
 import numpy as np
@@ -13,7 +9,7 @@ from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.metrics import confusion_matrix
 
-from .stemmer import NepStemmer
+from .feature_extraction import TfidfVectorizer
 
 class NepClassifier():
     """ 
@@ -23,10 +19,13 @@ class NepClassifier():
 
         economy, entertainment, news, politics, sports, world
     """
-
     def __init__(self):
-        # Stemmer to use
-        self.stemmer = NepStemmer()
+        # Feature extractor to use
+        self.feature_extractor = TfidfVectorizer(max_stems = 1000)
+        self.feature_extractor.load_corpus_info()
+
+        # Number of stems
+        self.stems_size = self.feature_extractor.stems_size
 
         # Base path to use
         self.base_path = os.path.dirname(__file__)
@@ -34,8 +33,8 @@ class NepClassifier():
         # Folder containing data
         self.corpus_path = os.path.join(self.base_path, 'data')
 
-        # File containing the corpus info
-        self.data_path = os.path.join(self.base_path, 'data.p')
+        # Classifier path
+        self.clf_path = os.path.join(self.base_path, 'clf.p')
 
         # Training data size
         self.train_data_size = 10000
@@ -43,18 +42,9 @@ class NepClassifier():
         # Test data size
         self.test_data_size = 1000
 
-        # Maximum stems to use
-        self.max_stems = 1000
-
-        # Stems to use as feature
-        self.stems = None
-
-        # Vector to hold the IDF of stems
-        self.idf_vector = None
-
         # Training data to use
-        self.train_data = []
-        self.test_data = []
+        self.train_data = None
+        self.test_data = None
 
         # Document categories
         self.categories = [
@@ -71,84 +61,6 @@ class NepClassifier():
 
         # Regularization parameter
         self.C = 50.0
-
-    def process_corpus(self):
-        """ 
-            Class method to process corpus located at path provided 
-            at self.corpus_path
-
-            The data must be organized as utf-8 encoded raw text file
-            having following structure
-
-            root/
-                class1/
-                    text11.txt
-                    text12.txt
-                class2/
-                    text21.txt
-                    text22.txt
-                ...
-        """
-
-        # Vectors for stems
-        count_vector = {}
-        idf_vector_total = {}
-
-        total_docs = 0
-
-        for root, dirs, files in os.walk(self.corpus_path):
-            for file_path in files:
-                abs_path = os.path.join(self.base_path, root, file_path)
-
-                file = open(abs_path, 'r')
-                content = file.read()
-                file.close()
-
-                # Obtain known stems
-                doc_stems = self.stemmer.get_stems(content)
-                doc_stems_set = set(doc_stems)
-
-                # Add the count of stems
-                for stem in doc_stems:
-                    count_vector[stem] = count_vector.get(stem, 0) + 1
-
-                for stem in doc_stems_set:
-                    idf_vector_total[stem] = idf_vector_total.get(stem, 0) + 1
-
-                total_docs += 1
-
-        # Obtain frequently occuring stems
-        stem_tuple=sorted(
-            count_vector.items(),
-            key = itemgetter(1),
-            reverse = True
-        )[:self.max_stems]
-    
-        # Construct a ordered list of frequent stems
-        stems = [item[0] for item in stem_tuple]
-
-        # IDF vector for the stems
-        idf_vector = [
-            log(total_docs / (1 + idf_vector_total[k])) 
-            for k in stems
-        ]
-        
-        # Dump the data obtained
-        data = {
-            'stems' : stems,
-            'idf_vector' : idf_vector
-        }
-
-        pickle.dump(data, open(self.data_path, 'wb'))
-
-    def load_corpus_info(self):
-        """ Load the corpus information a file """
-
-        # Load dump data
-        data = pickle.load(open(self.data_path, 'rb'))
-        
-        self.stems = data['stems']
-        self.idf_vector = data['idf_vector']
 
     def load_dataset(self):
         """
@@ -186,78 +98,35 @@ class NepClassifier():
         self.test_data = sample_docs[-self.test_data_size:]
         self.train_data = sample_docs[:-self.test_data_size]
 
-    def tf_vector(self, text):
-        """ Compute tf vector for a given text """
-
-        # Find stems in document
-        doc_stems = self.stemmer.get_stems(text)
-
-        # Contruct dictionary of stems
-        doc_vector = {}
-        for stem in doc_stems:
-            doc_vector[stem] = doc_vector.get(stem, 0) + 1
-
-        # Convert dictionary into list
-        doc_vector_list = [doc_vector.get(stem, 0) for stem in self.stems]
-
-        max_count = max(doc_vector_list)
-        if(max_count == 0):
-            max_count = 1
-
-        # Calculate the tf of text
-        tf_vector = 0.5 + (0.5 / max_count) * np.array(
-            [doc_vector.get(stem, 0) for stem in self.stems]
-        )
-
-        return(tf_vector)
-
     def compute_matrix(self, data):
         """ Compute the input and output matrix for given documents """
 
-        stems_size = len(self.stems)
         docs_size = len(data)
 
-        # Tf matrix
-        tf_matrix = np.ndarray(
-            (docs_size, stems_size),
-            dtype = 'float16'
-        )
-
-        idf_matrix = np.array(self.idf_vector)
-
-        # Training matrix
         input_matrix = np.ndarray(
-            (docs_size, stems_size),
+            (docs_size, self.stems_size),
             dtype='float16'
         )
 
         output_matrix = np.ndarray((docs_size, 1), dtype = 'float16')
 
-        # Loop to construct the training matrix
+        # Loop to construct matrix
         for i, doc in enumerate(data):
 
             with open(doc['path'], 'r') as file: 
                 content = file.read()
             
-            # Compute the tf and append it
-            tf_vector = self.tf_vector(content)
-            tf_matrix[i, :] = tf_vector 
+                # Compute the tf-idf and append it
+                input_matrix[i, :] = self.feature_extractor.tf_idf_vector(content)
 
-            output_matrix[i, 0] = self.categories.index(doc['category'])
-
-        # Element wise multiplication
-        for i in range(docs_size):
-            input_matrix[i, :] = tf_matrix[i, :] * idf_matrix
+                output_matrix[i, 0] = self.categories.index(doc['category'])
 
         output_matrix = output_matrix.ravel()
 
         return (input_matrix, output_matrix)
     
     def train(self):
-        """ Obtain the training matrix and train theclassifier """
-
-        if (not(self.stems)):
-            raise Exception('Corpus info not available.')
+        """ Obtain the training matrix and train the classifier """
 
         if (not(self.train_data)):
             raise Exception('Training data not selected')
@@ -269,40 +138,23 @@ class NepClassifier():
         clf.fit(input_matrix, output_matrix)
 
         # Dumping extracted data
-        clf_file = os.path.join(self.base_path, 'clf.p')
-        joblib.dump(clf, clf_file)
+        joblib.dump(clf, self.clf_path)
     
     def load_clf(self):
         """ Loads the trained classifier from file """
 
-        if (not(self.stems)):
-            self.load_dataset()
-
-        clf_file = os.path.join(self.base_path, 'clf.p')
-        self.clf = joblib.load(clf_file)
-
-    def tf_idf_vector(self, text):
-        """ Calculates the tf-idf vector for a given text """
-
-        if (not(self.stems)):
-            raise Exception('Corpus info not available')       
-
-        tf_vector = self.tf_vector(text)
-        idf_vector = np.array(self.idf_vector)
-
-        # Element wise product
-        return(tf_vector * idf_vector)
+        self.clf = joblib.load(self.clf_path)
 
     def predict(self, text):
         """ Predict the class of given text """
 
+        if (text == ''):
+            raise Exception('Empty text provided')
+
         if (not(self.clf)):
             raise Exception('Classifier not loaded')
         
-        if (text == ''):
-            raise Exception('Empty text provided')
-        
-        tf_idf_vector = self.tf_idf_vector(text)
+        tf_idf_vector = self.feature_extractor.tf_idf_vector(text)
         output_val = self.clf.predict(tf_idf_vector)[0]
         
         class_id = int(output_val)

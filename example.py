@@ -7,9 +7,6 @@ if __name__ == '__main__':
         # Initialize the classifier
         clf = NepClassifier()
 
-        # Loads the corpus info
-        clf.load_corpus_info()
-
         # Loads the trained classifier
         clf.load_clf()
         
