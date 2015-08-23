@@ -63,7 +63,7 @@ class NepClassifier():
             'news',
             'politics', 
             'sports', 
-            'world'
+            'international'
         ]
 
         # Classifier
@@ -288,14 +288,10 @@ class NepClassifier():
             raise Exception('Corpus info not available')       
 
         tf_vector = self.tf_vector(text)
+        idf_vector = np.array(self.idf_vector)
 
-        tf_idf_vector = []
-        for i in range(len(self.stems)):
-            tf_idf_vector.append(tf_vector[i] * self.idf_vector[i])
-
-        tf_idf_vector = tf_vector * np.array(self.idf_vector)
-
-        return(tf_idf_vector)
+        # Element wise product
+        return(tf_vector * idf_vector)
 
     def predict(self, text):
         """ Predict the class of given text """
