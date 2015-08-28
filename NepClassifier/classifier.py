@@ -48,7 +48,7 @@ class NepClassifier():
 
         # Document categories
         self.categories = [
-            'economy', 
+            'business', 
             'entertainment',
             'news',
             'politics', 
