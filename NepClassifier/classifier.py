@@ -11,17 +11,18 @@ from sklearn.metrics import confusion_matrix
 
 from .feature_extraction import TfidfVectorizer
 
+
 class NepClassifier():
-    """ 
+    """
         Classifier for Nepali News
 
-        It categorizes the given text in one among the following groups:
+        It categorizes the given text in one among the following groups
 
         economy, entertainment, news, politics, sports, world
     """
     def __init__(self):
         # Feature extractor to use
-        self.feature_extractor = TfidfVectorizer(max_stems = 1000)
+        self.feature_extractor = TfidfVectorizer(max_stems=1000)
         self.feature_extractor.load_corpus_info()
 
         # Number of stems
@@ -38,7 +39,7 @@ class NepClassifier():
 
         # Training data size
         self.train_data_size = 10000
-        
+
         # Test data size
         self.test_data_size = 1000
 
@@ -48,11 +49,11 @@ class NepClassifier():
 
         # Document categories
         self.categories = [
-            'business', 
+            'business',
             'entertainment',
             'news',
-            'politics', 
-            'sports', 
+            'politics',
+            'sports',
             'international'
         ]
 
@@ -80,21 +81,21 @@ class NepClassifier():
 
             # Convert path to posix notation
             category_name = category.as_posix().split('/')[-1]
-            
+
             if (not(category_name in self.categories)):
-            	continue
+                continue
 
             for filepath in category.iterdir():
                 documents.append({
-                    'path' : filepath.as_posix(),
-                    'category' : category_name
+                    'path': filepath.as_posix(),
+                    'category': category_name
                 })
 
         sample_docs = random.sample(
             documents,
             self.train_data_size + self.test_data_size
         )
-        
+
         self.test_data = sample_docs[-self.test_data_size:]
         self.train_data = sample_docs[:-self.test_data_size]
 
@@ -108,23 +109,24 @@ class NepClassifier():
             dtype='float16'
         )
 
-        output_matrix = np.ndarray((docs_size, 1), dtype = 'float16')
+        output_matrix = np.ndarray((docs_size, 1), dtype='float16')
 
         # Loop to construct matrix
         for i, doc in enumerate(data):
 
-            with open(doc['path'], 'r') as file: 
+            with open(doc['path'], 'r') as file:
                 content = file.read()
-            
+
                 # Compute the tf-idf and append it
-                input_matrix[i, :] = self.feature_extractor.tf_idf_vector(content)
+                input_matrix[i, :] = self.feature_extractor\
+                    .tf_idf_vector(content)
 
                 output_matrix[i, 0] = self.categories.index(doc['category'])
 
         output_matrix = output_matrix.ravel()
 
         return (input_matrix, output_matrix)
-    
+
     def train(self):
         """ Obtain the training matrix and train the classifier """
 
@@ -139,7 +141,7 @@ class NepClassifier():
 
         # Dumping extracted data
         joblib.dump(clf, self.clf_path)
-    
+
     def load_clf(self):
         """ Loads the trained classifier from file """
 
@@ -153,10 +155,10 @@ class NepClassifier():
 
         if (not(self.clf)):
             raise Exception('Classifier not loaded')
-        
+
         tf_idf_vector = self.feature_extractor.tf_idf_vector(text)
         output_val = self.clf.predict(tf_idf_vector)[0]
-        
+
         class_id = int(output_val)
         return (self.categories[class_id])
 
@@ -182,5 +184,5 @@ class NepClassifier():
         fscore = mean(fscore)
 
         conf_mat = confusion_matrix(output_matrix, pred_output)
-        
+
         return(precision, recall, fscore, accuracy, conf_mat)
