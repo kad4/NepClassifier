@@ -7,12 +7,13 @@ import numpy as np
 
 from .stemmer import NepStemmer
 
+
 class TfidfVectorizer():
     """
         Feature extraction from given text
         by using tf-idf
     """
-    def __init__(self, max_stems = 1000):
+    def __init__(self, max_stems=1000):
         # Stemmer to use
         self.stemmer = NepStemmer()
 
@@ -38,8 +39,8 @@ class TfidfVectorizer():
         self.idf_vector = None
 
     def process_corpus(self):
-        """ 
-            Class method to process corpus located at path provided 
+        """
+            Class method to process corpus located at path provided
             at self.corpus_path
 
             The data must be organized as utf-8 encoded raw text file
@@ -78,33 +79,34 @@ class TfidfVectorizer():
                     count_vector[stem] = count_vector.get(stem, 0) + 1
 
                 for stem in doc_stems_set:
-                    occurrence_vector[stem] = occurrence_vector.get(stem, 0) + 1
+                    occurrence_vector[stem] = occurrence_vector.get(stem, 0) \
+                        + 1
 
                 total_docs += 1
 
         # Sort stems based on frequecy
-        stem_tuple=sorted(
+        stem_tuple = sorted(
             count_vector.items(),
-            key = itemgetter(1),
-            reverse = True
+            key=itemgetter(1),
+            reverse=True
         )
 
         # Filter stems which occur in less than 4 documents
         stem_tuple = [item for item in stem_tuple if item[1] > 3]
-    
+
         # Construct a ordered list of stems
         stems = [item[0] for item in stem_tuple]
 
         # IDF vector for the stems
         idf_vector = [
-            log(total_docs / (1 + occurrence_vector[k])) 
+            log(total_docs / (1 + occurrence_vector[k]))
             for k in stems
         ]
-        
+
         # Dump the data obtained
         data = {
-            'stems' : stems,
-            'idf_vector' : idf_vector
+            'stems': stems,
+            'idf_vector': idf_vector
         }
 
         pickle.dump(data, open(self.data_path, 'wb'))
