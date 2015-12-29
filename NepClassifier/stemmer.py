@@ -1,5 +1,6 @@
 import re
 import os
+import json
 
 
 class NepStemmer():
@@ -8,52 +9,19 @@ class NepStemmer():
     def __init__(self):
         self.stems_set = set()
         self.filter_set = set()
-        self.suffixes = {
-            1: [
-                'छ', 'ा', 'न', 'ए', 'े', 'ी', 'ि', 'ै', 'ई', 'ओ', 'उ'
-            ],
-            2: [
-                'ले', 'को', 'का', 'की', 'ँछ', 'छु', 'छे', 'छौ', 'ने',
-                'यो', 'दा', 'दै', 'नु', 'एँ',  'ेँ', 'छौ', 'तै', 'थे',
-                'औं', 'ौं', 'यौ', 'ला', 'ली', 'मा', 'उँ', 'ुँ', 'ेर',
-                'एर', 'ाइ', 'आइ', 'इन', 'कै', 'ता', 'दो', 'ाए', 'ना',
-                'ौँ', 'िक', 'ाइ', 'ाउ'
-            ],
-            3: [
-                'हरू', 'लाई', 'बाट', 'एका', 'ँछु', 'इने', 'ँदै', 'छौँ',
-                'छस्', 'छन्', 'थेँ', 'एस्',  'ेस्', 'ओस्', 'ोस्', 'उन्',
-                'ुन्', 'एन्', 'ेन्', 'यौं', 'इस्', 'िस्', '्नो', 'साथ',
-                'नन्', 'िया', 'झैँ', 'न्छ', 'ेका', 'एको', 'ेको',
-                'शील', 'सार', 'ालु', 'ईन्', 'ीन्', 'िलो', 'ाडी'
-            ],
-            4: [
-                'छेस्', 'छ्यौ', 'ँछन्', 'छिन्', 'थ्यौ', 'थिन्',
-                'औंला', 'ौंला', 'लिन्', 'लान्', 'लास्', 'लिस्',
-                'होस्', 'माथी', 'तर्फ', 'मुनि', 'पर्छ', 'ियाँ',
-                'न्छौ', 'सम्म', 'ाएको', 'सुकै', 'यालु', 'डालु',
-                'उँला', 'ुँला'
-            ],
-            5: [
-                'थ्यौँ', 'स्थित', 'तुल्य', 'चाँहि', 'चाहीँ', 'मात्र',
-                'न्छन्', 'न्छस्', 'मध्ये'
-            ],
-            6: [
-                'पालिका', 'अनुसार', 'न्छ्यौ', 'न्छेस्', 'न्छिन्',
-                'इन्जेल', 'िन्जेल', 'ुन्जेल', 'उन्जेल'
-            ],
-        }
+        self.suffixes = {}
 
-        # Read stems and filter words from files
-        self.read_stems()
+        self.read_data()
 
-    def read_stems(self):
-        """ Read stems and filter words """
+    def read_data(self):
+        """ Read stems, filter words and suffixes from files"""
 
-        # Reads the word stems
+        # Base path for files
         base_path = os.path.dirname(__file__)
 
         stems_path = os.path.join(base_path, 'stems.txt')
         filter_path = os.path.join(base_path, 'filter.txt')
+        suffixes_path = os.path.join(base_path, 'suffixes.json')
 
         with open(stems_path) as file:
             lines = file.readlines()
@@ -70,11 +38,15 @@ class NepStemmer():
 
         self.filter_set = set(filter_stems)
 
+        with open(suffixes_path, 'r') as file:
+            self.suffixes = json.load(file)
+
     def remove_suffix(self, word):
         """ Removes suffixes from a given word """
-        for L in 2, 3, 4, 5, 6:
+        # for L in 2, 3, 4, 5, 6:
+        for L in range(2, 7):
             if len(word) > L + 1:
-                for suf in self.suffixes[L]:
+                for suf in self.suffixes[str(L)]:
                     if word.endswith(suf):
                         return word[:-L]
             else:
