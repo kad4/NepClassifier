@@ -23,8 +23,8 @@ class TfidfVectorizer():
         # Folder containing data
         self.corpus_path = os.path.join(self.base_path, 'data')
 
-        # File containing the corpus info
-        self.data_path = os.path.join(self.base_path, 'data.p')
+        # File containing the idf of tokens
+        self.data_path = os.path.join(self.base_path, 'idf.p')
 
         # Maximum stems to use
         self.max_stems = max_stems
