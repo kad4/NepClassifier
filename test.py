@@ -1,7 +1,8 @@
-from NepClassifier import NepClassifier
+from NepClassifier import SVMClassifier
 
-def run_batch(total_runs = 1):
-    clf = NepClassifier()
+
+def run_batch(total_runs=1):
+    clf = SVMClassifier()
 
     pres = []
     recs = []
@@ -9,10 +10,10 @@ def run_batch(total_runs = 1):
     accs = []
 
     for i in range(total_runs):
-        # Load dataset 
+        # Load dataset
         clf.load_dataset()
 
-        # Train and evaluate 
+        # Train and evaluate
         clf.train()
 
         clf.load_clf()

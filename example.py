@@ -1,16 +1,20 @@
-from NepClassifier import NepClassifier
+from NepClassifier import SVMClassifier
 
-if __name__ == '__main__':
+
+def main():
     with open('example.txt', 'r') as file:
         content = file.read()
 
-        # Initialize the classifier
-        clf = NepClassifier()
+    # Initialize the classifier
+    clf = SVMClassifier()
 
-        # Loads the trained classifier
-        clf.load_clf()
-        
-        # Predicted category
-        category = clf.predict(content)
+    # Loads the trained classifier
+    clf.load_clf()
 
-        print('The category is : ', category)
+    # Predicted category
+    category = clf.predict(content)
+
+    print('The category is : ', category)
+
+if __name__ == '__main__':
+    main()

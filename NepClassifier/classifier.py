@@ -12,7 +12,7 @@ from sklearn.metrics import confusion_matrix
 from .feature_extraction import TfidfVectorizer
 
 
-class NepClassifier():
+class SVMClassifier():
     """
         Classifier for Nepali News
 
@@ -20,6 +20,7 @@ class NepClassifier():
 
         economy, entertainment, news, politics, sports, world
     """
+
     def __init__(self):
         # Feature extractor to use
         self.feature_extractor = TfidfVectorizer(max_stems=1000)
