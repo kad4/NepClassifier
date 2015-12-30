@@ -1,16 +1,20 @@
 import re
 import os
 import json
+import logging
 
 
 class NepStemmer():
     """ Stemmer for Nepali words """
 
     def __init__(self):
+        logging.debug("Initializing stemmer")
+
         self.stems_set = set()
         self.filter_set = set()
         self.suffixes = {}
 
+        logging.debug("Reading stemmer data from disk")
         self.read_data()
 
     def read_data(self):
