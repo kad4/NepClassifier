@@ -1,3 +1,3 @@
 from .stemmer import NepStemmer
-from .classifier import SVMClassifier
+from .svm import SVMClassifier
 from .feature_extraction import TfidfVectorizer
