@@ -3,22 +3,20 @@ import logging
 from gensim.corpora import Dictionary
 
 from stemmer import NepStemmer
+from datasets import NewsData
 
 
 class NewsCorpus():
     """ Corpus for Nepali news """
+    def __init__(self):
+        self.stemmer = NepStemmer()
+        self.documents, _ = NewsData.load_data()
 
     def __iter__(self):
-        stemmer = NepStemmer()
-
-        # Iterate to yield files
-        for root, dirs, files in os.walk('data'):
-            for file in files:
-                absolute_path = os.path.join(root, file)
-                with open(absolute_path, 'r') as file_ptr:
-                    content = file_ptr.read()
-                    tokens = stemmer.get_stems(content)
-                    yield tokens
+        # Yield tokens
+        for document in self.documents:
+            tokens = self.stemmer.get_stems(document)
+            yield tokens
 
 
 def main():
