@@ -1,4 +1,3 @@
-import os
 import logging
 from gensim.corpora import Dictionary
 
