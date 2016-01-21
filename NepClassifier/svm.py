@@ -1,189 +1,140 @@
 import os
-import random
-from pathlib import Path
+import logging
+import pickle
 from statistics import mean
 
-import numpy as np
 from sklearn import svm
 from sklearn.externals import joblib
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import precision_recall_fscore_support
+from sklearn.utils import shuffle
+from gensim import matutils
 
-from .feature_extraction import TfidfVectorizer
+from .vectorizer import TfidfVectorizer
+from .datasets import NewsData
 
 
 class SVMClassifier():
     """
-        Classifier for Nepali News
-
-        It categorizes the given text in one among the following groups
-
-        economy, entertainment, news, politics, sports, world
+        SVM based classifier for Nepali news
     """
 
     def __init__(self):
-        # Feature extractor to use
-        self.feature_extractor = TfidfVectorizer(max_stems=1000)
-        self.feature_extractor.load_corpus_info()
-
-        # Number of stems
-        self.stems_size = self.feature_extractor.stems_size
-
-        # Base path to use
+        # Base path
         self.base_path = os.path.dirname(__file__)
 
-        # Folder containing data
-        self.corpus_path = os.path.join(self.base_path, 'data')
+        # Path for pre-trained classifier
+        self.clf_path = os.path.join(self.base_path, "clf.p")
 
-        # Classifier path
-        self.clf_path = os.path.join(self.base_path, 'clf.p')
+        # Path for pre-trained classifier
+        self.labels_path = os.path.join(self.base_path, "labels.p")
 
-        # Training data size
-        self.train_data_size = 10000
+        # Initialize tf-idf vectorizer
+        self.vectorizer = TfidfVectorizer()
+        self.no_of_features = self.vectorizer.no_of_features
+
+        # Regularization paramater
+        self.C = 1.0
+
+        # Classifier to use
+        self.classifier = None
+        self.labels = None
 
         # Test data size
         self.test_data_size = 1000
 
-        # Training data to use
-        self.train_data = None
-        self.test_data = None
+    def train(self):
+        """ Train classifier and evaluate performance """
 
-        # Document categories
-        self.categories = [
-            'economy',
-            'entertainment',
-            'news',
-            'politics',
-            'sports',
-            'international'
+        logging.debug("Loading dataset")
+        documents, labels = NewsData.load_data()
+        documents, labels = shuffle(documents, labels)
+
+        # Obtain unique labels
+        unique_labels = list(set(labels))
+        output_array = [unique_labels.index(x) for x in labels]
+
+        # Obtain training data
+        training_documents = documents[self.test_data_size:]
+        training_data_y = output_array[self.test_data_size:]
+
+        # Obtain testing data
+        test_documents = documents[:self.test_data_size]
+        test_data_y = output_array[:self.test_data_size]
+
+        logging.debug("Obtaining tf-idf matrix for training data")
+        training_corpus = [
+            self.vectorizer.doc2vector(x)
+            for x in training_documents
         ]
 
-        # Classifier
-        self.clf = None
+        training_data_x = matutils.corpus2dense(
+            training_corpus,
+            self.no_of_features
+        ).transpose()
 
-        # Regularization parameter
-        self.C = 50.0
+        # Initialize SVM
+        logging.debug("Training SVM")
+        classifier = svm.SVC(self.C, kernel="linear")
+        classifier.fit(training_data_x, training_data_y)
 
-    def load_dataset(self):
-        """
-            Load training data from the path specified by
-            self.corpus_path
+        # Dumping trained SVM
+        joblib.dump(classifier, self.clf_path)
 
-            The files are loaded as a dictionary similar to one
-            given below
-            doc = {
-                'path' : '../data/text1.txt',
-                'category' : 'news'
-            }
-        """
+        # Dump output labels
+        pickle.dump(unique_labels, open(self.labels_path, "wb"))
 
-        documents = []
-        for category in Path(self.corpus_path).iterdir():
+        logging.debug("Evaluating model")
+        test_corpus = [
+            self.vectorizer.doc2vector(x)
+            for x in test_documents
+        ]
 
-            # Convert path to posix notation
-            category_name = category.as_posix().split('/')[-1]
+        test_data_x = matutils.corpus2dense(
+            test_corpus,
+            self.no_of_features
+        ).transpose()
 
-            if (not(category_name in self.categories)):
-                continue
-
-            for filepath in category.iterdir():
-                documents.append({
-                    'path': filepath.as_posix(),
-                    'category': category_name
-                })
-
-        sample_docs = random.sample(
-            documents,
-            self.train_data_size + self.test_data_size
-        )
-
-        self.test_data = sample_docs[-self.test_data_size:]
-        self.train_data = sample_docs[:-self.test_data_size]
-
-    def compute_matrix(self, data):
-        """ Compute the input and output matrix for given documents """
-
-        docs_size = len(data)
-
-        input_matrix = np.ndarray(
-            (docs_size, self.stems_size),
-            dtype='float16'
-        )
-
-        output_matrix = np.ndarray((docs_size, 1), dtype='float16')
-
-        # Loop to construct matrix
-        for i, doc in enumerate(data):
-
-            with open(doc['path'], 'r') as file:
-                content = file.read()
-
-                # Compute the tf-idf and append it
-                input_matrix[i, :] = self.feature_extractor\
-                    .tf_idf_vector(content)
-
-                output_matrix[i, 0] = self.categories.index(doc['category'])
-
-        output_matrix = output_matrix.ravel()
-
-        return (input_matrix, output_matrix)
-
-    def train(self):
-        """ Obtain the training matrix and train the classifier """
-
-        if (not(self.train_data)):
-            raise Exception('Training data not selected')
-
-        input_matrix, output_matrix = self.compute_matrix(self.train_data)
-
-        # Assign and train a SVM
-        clf = svm.SVC(self.C)
-        clf.fit(input_matrix, output_matrix)
-
-        # Dumping extracted data
-        joblib.dump(clf, self.clf_path)
-
-    def load_clf(self):
-        """ Loads the trained classifier from file """
-
-        self.clf = joblib.load(self.clf_path)
-
-    def predict(self, text):
-        """ Predict the class of given text """
-
-        if (text == ''):
-            raise Exception('Empty text provided')
-
-        if (not(self.clf)):
-            raise Exception('Classifier not loaded')
-
-        tf_idf_vector = self.feature_extractor.tf_idf_vector(text)
-        output_val = self.clf.predict(tf_idf_vector)[0]
-
-        class_id = int(output_val)
-        return (self.categories[class_id])
-
-    def evaluate_model(self):
-        """ Performs the model evaluation """
-
-        if (not(self.clf)):
-            raise Exception('Classifier not loaded')
-
-        input_matrix, output_matrix = self.compute_matrix(self.test_data)
-
-        pred_output = self.clf.predict(input_matrix)
-
-        accuracy = accuracy_score(output_matrix, pred_output)
+        logging.debug("Predicting classes")
+        predicted_class = classifier.predict(test_data_x)
 
         precision, recall, fscore, __ = precision_recall_fscore_support(
-            output_matrix,
-            pred_output
+            test_data_y,
+            predicted_class
         )
 
         precision = mean(precision)
         recall = mean(recall)
         fscore = mean(fscore)
 
-        conf_mat = confusion_matrix(output_matrix, pred_output)
+        logging.info("Precision: " + str(precision))
+        logging.info("Recall: " + str(recall))
+        logging.info("fscore: " + str(fscore))
 
-        return(precision, recall, fscore, accuracy, conf_mat)
+    def load_clf(self):
+        """ Load the pre-trained classifier """
+
+        if (not(os.path.exists(self.clf_path))):
+            raise Exception("Pre trained classifier not found")
+
+        if (not(os.path.exists(self.labels_path))):
+            raise Exception("Labels for classifier not found")
+
+        self.classifier = joblib.load(self.clf_path)
+        self.labels = pickle.load(open(self.labels_path, "rb"))
+
+    def predict(self, text):
+        """ Predict the class of given text """
+
+        if(not(self.classifier)):
+            raise Exception("Classifier not loaded")
+
+        if (text == ""):
+            raise Exception('Empty text provided')
+
+        tf_idf_vector = matutils.sparse2full(
+            self.vectorizer.doc2vector(text),
+            self.no_of_features
+        )
+
+        predicted_output = self.classifier.predict(tf_idf_vector)[0]
+        return(self.labels[int(predicted_output)])
