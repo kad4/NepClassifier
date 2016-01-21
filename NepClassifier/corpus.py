@@ -26,7 +26,7 @@ def main():
 
     news_corpus = NewsCorpus()
     dictionary = Dictionary(news_corpus)
-    dictionary.filter_extremes()
+    dictionary.filter_extremes(no_below=5, no_above=0.5, keep_n=1000)
     dictionary.compactify()
 
     dictionary.save('tokens.dict')
