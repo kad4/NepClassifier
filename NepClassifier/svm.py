@@ -134,7 +134,7 @@ class SVMClassifier():
         tf_idf_vector = matutils.sparse2full(
             self.vectorizer.doc2vector(text),
             self.no_of_features
-        )
+        ).reshape(1, -1)
 
         predicted_output = self.classifier.predict(tf_idf_vector)[0]
         return(self.labels[int(predicted_output)])
