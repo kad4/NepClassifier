@@ -11,33 +11,26 @@ class NepStemmer():
         self.filter_set = set()
         self.suffixes = {}
 
-        self.read_data()
-
-    def read_data(self):
-        """ Read stems, filter words and suffixes from files"""
-
         # Base path for files
         base_path = os.path.dirname(__file__)
 
+        # Read stems list
         stems_path = os.path.join(base_path, 'stems.txt')
-        filter_path = os.path.join(base_path, 'filter.txt')
-        suffixes_path = os.path.join(base_path, 'suffixes.json')
-
         with open(stems_path) as file:
             lines = file.readlines()
 
-        # Constructing stems set
-        for line in lines:
-            new_line = line.replace('\n', '')
-            stem = new_line.split('|')[0]
-            self.stems_set.add(stem)
+        self.stems_set = {
+            line.replace("\n", "").split("|")[0]
+            for line in lines
+        }
 
+        filter_path = os.path.join(base_path, 'filter.txt')
         # Reads filter words
         with open(filter_path) as file:
-            filter_stems = file.read().split('\n')
+            self.filter_set = set(file.read().split("\n"))
 
-        self.filter_set = set(filter_stems)
-
+        # Read suffix list
+        suffixes_path = os.path.join(base_path, 'suffixes.json')
         with open(suffixes_path, 'r') as file:
             self.suffixes = json.load(file)
 
