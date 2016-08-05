@@ -5,7 +5,7 @@ import pickle
 
 class NewsData():
     """
-        News data for classifier
+    News data for classifier
     """
 
     def load_data():

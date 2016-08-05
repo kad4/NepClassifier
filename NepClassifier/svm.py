@@ -9,13 +9,13 @@ from sklearn.metrics import precision_recall_fscore_support
 from sklearn.utils import shuffle
 from gensim import matutils
 
-from .vectorizer import TfidfVectorizer
+from .tfidf import TfidfVectorizer
 from .datasets import NewsData
 
 
 class SVMClassifier():
     """
-        SVM based classifier for Nepali news
+    SVM based classifier for Nepali textxt
     """
 
     def __init__(self):
