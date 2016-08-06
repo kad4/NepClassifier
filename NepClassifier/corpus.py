@@ -1,21 +1,7 @@
 import logging
 from gensim.corpora import Dictionary
 
-from stemmer import NepStemmer
-from datasets import NewsData
-
-
-class NewsCorpus():
-    """ Corpus for Nepali news """
-    def __init__(self):
-        self.stemmer = NepStemmer()
-        self.documents, _ = NewsData.load_data()
-
-    def __iter__(self):
-        # Yield tokens
-        for document in self.documents:
-            tokens = self.stemmer.get_stems(document)
-            yield tokens
+from datasets import NewsCorpus
 
 
 def main():

@@ -2,10 +2,12 @@ import os
 import gzip
 import pickle
 
+from .stemmer import NepStemmer
+
 
 class NewsData():
     """
-    News data for classifier
+    Class to obtain Nepali news dataset
     """
 
     def load_data():
@@ -18,3 +20,19 @@ class NewsData():
         # Return the obtained data
         documents, labels = pickle.load(gzip.open(data_path, 'rb'))
         return (documents, labels)
+
+
+class NewsCorpus():
+    """
+    Corpus for Nepali news to use with gensim
+    """
+
+    def __init__(self):
+        self.stemmer = NepStemmer()
+        self.documents, _ = NewsData.load_data()
+
+    def __iter__(self):
+        # Yield tokens
+        for document in self.documents:
+            tokens = self.stemmer.get_stems(document)
+            yield tokens
