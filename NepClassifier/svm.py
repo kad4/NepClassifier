@@ -4,9 +4,10 @@ import pickle
 from statistics import mean
 
 from sklearn import svm
-from sklearn.externals import joblib
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.utils import shuffle
+from sklearn.cross_validation import train_test_split
+
 from gensim import matutils
 
 from .tfidf import TfidfVectorizer
@@ -40,7 +41,7 @@ class SVMClassifier():
         self.labels = None
 
         # Test data size
-        self.test_data_size = 1000
+        self.test_data_size = 0.33
 
     def train(self):
         """ Train classifier and evaluate performance """
@@ -49,17 +50,17 @@ class SVMClassifier():
         documents, labels = NewsData.load_data()
         documents, labels = shuffle(documents, labels)
 
-        # Obtain unique labels
+        # Encode output label
         unique_labels = list(set(labels))
         output_array = [unique_labels.index(x) for x in labels]
 
-        # Obtain training data
-        training_documents = documents[self.test_data_size:]
-        training_data_y = output_array[self.test_data_size:]
-
-        # Obtain testing data
-        test_documents = documents[:self.test_data_size]
-        test_data_y = output_array[:self.test_data_size]
+        # Split dataset into train/test
+        training_documents, test_documents, training_data_y, test_data_y = \
+            train_test_split(
+                documents,
+                output_array,
+                test_size=self.test_data_size
+            )
 
         logging.debug("Obtaining tf-idf matrix for training data")
         training_corpus = [
@@ -78,7 +79,7 @@ class SVMClassifier():
         classifier.fit(training_data_x, training_data_y)
 
         # Dumping trained SVM
-        joblib.dump(classifier, self.clf_path)
+        pickle.dump(classifier, open(self.clf_path, "wb"))
 
         # Dump output labels
         pickle.dump(unique_labels, open(self.labels_path, "wb"))
@@ -119,7 +120,7 @@ class SVMClassifier():
         if (not(os.path.exists(self.labels_path))):
             raise Exception("Labels for classifier not found")
 
-        self.classifier = joblib.load(self.clf_path)
+        self.classifier = pickle.load(self.clf_path)
         self.labels = pickle.load(open(self.labels_path, "rb"))
 
     def predict(self, text):
