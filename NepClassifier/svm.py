@@ -1,5 +1,4 @@
 import os
-import time
 import logging
 import pickle
 
@@ -9,7 +8,7 @@ from sklearn.utils import shuffle
 
 from gensim import matutils
 
-from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
+from hyperopt import fmin, tpe, hp
 
 from .tfidf import TfidfVectorizer
 from .datasets import NewsData
@@ -37,9 +36,6 @@ class SVMClassifier():
         self.vectorizer = TfidfVectorizer()
         self.no_of_features = self.vectorizer.no_of_features
 
-        # Regularization paramater
-        self.C = 1.0
-
         # Classifier to use
         self.classifier = None
         self.labels = None
@@ -65,15 +61,8 @@ class SVMClassifier():
             score = scores.mean()
             logging.debug("Mean score={}".format(score))
 
-            data = {
-                "loss": 1-score,
-                "status": STATUS_OK,
-
-                "eval_time": time.time(),
-                "score": score
-            }
-
-            return data
+            # Return loss
+            return 1-score
 
         return eval
 
@@ -122,15 +111,12 @@ class SVMClassifier():
             self.output_matrix
         )
 
-        trials = Trials()
-
         # Perform hyper paramater optimization
         best_c = fmin(
             fn=eval,
             space=hp.lognormal('c', 0, 1),
             algo=tpe.suggest,
             max_evals=10,
-            trials=trials
         )
 
         # Initialize SVM
