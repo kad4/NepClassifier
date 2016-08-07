@@ -138,7 +138,7 @@ class SVMClassifier():
         if (not(os.path.exists(self.labels_path))):
             raise Exception("Labels for classifier not found")
 
-        self.classifier = pickle.load(self.clf_path)
+        self.classifier = pickle.load(open(self.clf_path, "rb"))
         self.labels = pickle.load(open(self.labels_path, "rb"))
 
     def predict(self, text):
