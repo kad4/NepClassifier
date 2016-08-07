@@ -1,14 +1,15 @@
 import os
+import time
 import logging
 import pickle
-from statistics import mean
 
 from sklearn import svm
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn import cross_validation
 from sklearn.utils import shuffle
-from sklearn.cross_validation import train_test_split
 
 from gensim import matutils
+
+from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 
 from .tfidf import TfidfVectorizer
 from .datasets import NewsData
@@ -29,6 +30,9 @@ class SVMClassifier():
         # Path for pre-trained classifier
         self.labels_path = os.path.join(self.base_path, "labels.p")
 
+        # Path for training input/output matrix
+        self.matrix_path = os.path.join(self.base_path, "matrix.p")
+
         # Initialize tf-idf vectorizer
         self.vectorizer = TfidfVectorizer()
         self.no_of_features = self.vectorizer.no_of_features
@@ -43,76 +47,104 @@ class SVMClassifier():
         # Test data size
         self.test_data_size = 0.33
 
+    def contruct_cost_function(self, input_matrix, output_matrix):
+        def eval(c):
+
+            logging.debug("Training using c={}".format(c))
+
+            # Construct classifier
+            classifier = svm.SVC(c, kernel="linear")
+
+            scores = cross_validation.cross_val_score(
+                classifier,
+                input_matrix,
+                output_matrix,
+                cv=5
+            )
+
+            score = scores.mean()
+            logging.debug("Mean score={}".format(score))
+
+            data = {
+                "loss": 1-score,
+                "status": STATUS_OK,
+
+                "eval_time": time.time(),
+                "score": score
+            }
+
+            return data
+
+        return eval
+
+    def load_matrix(self):
+        logging.debug("Loading dataset")
+
+        if not os.path.exists(self.matrix_path):
+            # Obtain corpus data
+            documents, labels = shuffle(NewsData.load_data())
+
+            # Encode output label
+            unique_labels = list(set(labels))
+            self.output_matrix = [self.unique_labels.index(x) for x in labels]
+
+            logging.debug("Obtaining tf-idf matrix for data")
+            input_matrix_sparse = [
+                self.vectorizer.doc2vector(x)
+                for x in documents
+            ]
+
+            self.input_matrix = matutils.corpus2dense(
+                input_matrix_sparse,
+                self.no_of_features
+            ).transpose()
+
+            pickle.dump(
+                (self.input_matrix, self.output_matrix),
+                open(self.matrix_path, "wb")
+            )
+
+            # Dump output labels
+            pickle.dump(unique_labels, open(self.labels_path, "wb"))
+        else:
+            self.input_matrix, self.output_matrix = pickle.load(
+                open(self.matrix_path, "rb")
+            )
+
     def train(self):
         """ Train classifier and evaluate performance """
 
-        logging.debug("Loading dataset")
-        documents, labels = NewsData.load_data()
-        documents, labels = shuffle(documents, labels)
+        # Load input/output matrix
+        self.load_matrix()
 
-        # Encode output label
-        unique_labels = list(set(labels))
-        output_array = [unique_labels.index(x) for x in labels]
+        eval = self.contruct_cost_function(
+            self.input_matrix,
+            self.output_matrix
+        )
 
-        # Split dataset into train/test
-        training_documents, test_documents, training_data_y, test_data_y = \
-            train_test_split(
-                documents,
-                output_array,
-                test_size=self.test_data_size
-            )
+        trials = Trials()
 
-        logging.debug("Obtaining tf-idf matrix for training data")
-        training_corpus = [
-            self.vectorizer.doc2vector(x)
-            for x in training_documents
-        ]
-
-        training_data_x = matutils.corpus2dense(
-            training_corpus,
-            self.no_of_features
-        ).transpose()
+        # Perform hyper paramater optimization
+        best_c = fmin(
+            fn=eval,
+            space=hp.lognormal('c', 0, 1),
+            algo=tpe.suggest,
+            max_evals=10,
+            trials=trials
+        )
 
         # Initialize SVM
         logging.debug("Training SVM")
-        classifier = svm.SVC(self.C, kernel="linear")
-        classifier.fit(training_data_x, training_data_y)
+        classifier = svm.SVC(best_c, kernel="linear")
+        classifier.fit(self.input_matrix, self.output_matrix)
 
         # Dumping trained SVM
         pickle.dump(classifier, open(self.clf_path, "wb"))
 
-        # Dump output labels
-        pickle.dump(unique_labels, open(self.labels_path, "wb"))
-
-        logging.debug("Evaluating model")
-        test_corpus = [
-            self.vectorizer.doc2vector(x)
-            for x in test_documents
-        ]
-
-        test_data_x = matutils.corpus2dense(
-            test_corpus,
-            self.no_of_features
-        ).transpose()
-
-        logging.debug("Predicting classes")
-        predicted_class = classifier.predict(test_data_x)
-
-        precision, recall, fscore, __ = precision_recall_fscore_support(
-            test_data_y,
-            predicted_class
-        )
-
-        precision = mean(precision)
-        recall = mean(recall)
-        fscore = mean(fscore)
-
-        logging.info("Precision: " + str(precision))
-        logging.info("Recall: " + str(recall))
-        logging.info("fscore: " + str(fscore))
-
     def load_clf(self):
         """ Load the pre-trained classifier """
+
+        logging.debug("Loading classifier data")
 
         if (not(os.path.exists(self.clf_path))):
             raise Exception("Pre trained classifier not found")
@@ -124,10 +156,12 @@ class SVMClassifier():
         self.labels = pickle.load(open(self.labels_path, "rb"))
 
     def predict(self, text):
-        """ Predict the class of given text """
+        """
+        Predict the class of given text
+        """
 
-        if(not(self.classifier)):
-            raise Exception("Classifier not loaded")
+        # Check and load classifier data
+        self.load_clf()
 
         if (text == ""):
             raise Exception('Empty text provided')

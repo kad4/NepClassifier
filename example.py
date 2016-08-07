@@ -8,9 +8,6 @@ def main():
     # Initialize the classifier
     clf = SVMClassifier()
 
-    # Loads the trained classifier
-    clf.load_clf()
-
     # Predicted category
     category = clf.predict(content)
 
