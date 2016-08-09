@@ -112,12 +112,14 @@ class SVMClassifier():
         )
 
         # Perform hyper paramater optimization
-        best_c = fmin(
+        best = fmin(
             fn=eval,
-            space=hp.lognormal('c', 0, 1),
+            space=hp.lognormal("c", 0, 1),
             algo=tpe.suggest,
             max_evals=10,
         )
+
+        best_c = best["c"]
 
         # Initialize SVM
         logging.debug("Training SVM")
@@ -150,7 +152,7 @@ class SVMClassifier():
         self.load_clf()
 
         if (text == ""):
-            raise Exception('Empty text provided')
+            raise Exception("Empty text provided")
 
         tf_idf_vector = matutils.sparse2full(
             self.vectorizer.doc2vector(text),
