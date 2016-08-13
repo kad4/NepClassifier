@@ -15,7 +15,7 @@ class NewsData():
         base_path = os.path.dirname(__file__)
 
         # Path for data set
-        data_path = os.path.join(base_path, "newsdata.pkl.gz")
+        data_path = os.path.join(base_path, "data", "newsdata.pkl.gz")
 
         # Return the obtained data
         documents, labels = pickle.load(gzip.open(data_path, 'rb'))

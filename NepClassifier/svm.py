@@ -16,7 +16,7 @@ from .datasets import NewsData
 
 class SVMClassifier():
     """
-    SVM based classifier for Nepali textxt
+    SVM based classifier for Nepali text
     """
 
     def __init__(self):
@@ -24,7 +24,7 @@ class SVMClassifier():
         self.base_path = os.path.dirname(__file__)
 
         # Path for pre-trained classifier
-        self.clf_path = os.path.join(self.base_path, "clf.p")
+        self.clf_path = os.path.join(self.base_path, "svm.p")
 
         # Path for pre-trained classifier
         self.labels_path = os.path.join(self.base_path, "labels.p")
