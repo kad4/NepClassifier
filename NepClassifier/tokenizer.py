@@ -5,6 +5,21 @@ from gensim.corpora import Dictionary
 from .stemmer import NepStemmer
 
 
+def construct_dictionary(corpus):
+    """
+    Iterates through the given Corpus and constructs a token dictionary to
+    use
+    """
+
+    dictionary = Dictionary(corpus)
+    dictionary.filter_extremes(no_below=5, no_above=0.5, keep_n=1000)
+    dictionary.compactify()
+
+    tokens_path = os.path.join(os.path.dirname(__file__), "tokens.dict")
+
+    dictionary.save(tokens_path)
+
+
 class Tokenizer():
     """
     Stemmer and Tokenizer for Nepali text
