@@ -101,7 +101,14 @@ class SVMClassifier():
             )
 
     def train(self):
-        """ Train classifier and evaluate performance """
+        """
+        Train classifier and perform hyper paramater optimization
+        """
+
+        logging.basicConfig(
+            format='%(asctime)s:%(levelname)s:%(message)s',
+            level=logging.INFO
+        )
 
         # Load input/output matrix
         self.load_matrix()
@@ -112,16 +119,16 @@ class SVMClassifier():
         )
 
         # Perform hyper paramater optimization
-        best = fmin(
+        best_parameters = fmin(
             fn=eval,
             space=hp.lognormal("c", 0, 1),
             algo=tpe.suggest,
             max_evals=10,
         )
 
-        best_c = best["c"]
+        best_c = best_parameters["c"]
 
-        # Initialize SVM
+        # Train SVM
         logging.debug("Training SVM")
         classifier = svm.SVC(best_c, kernel="linear")
         classifier.fit(self.input_matrix, self.output_matrix)
