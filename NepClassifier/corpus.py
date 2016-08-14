@@ -1,21 +1,24 @@
+import os
 import logging
 from gensim.corpora import Dictionary
 
-from datasets import NewsCorpus
+
+logging.basicConfig(
+    format='%(asctime)s:%(levelname)s:%(message)s',
+    level=logging.INFO
+)
 
 
-def main():
-    logging.basicConfig(
-        format='%(asctime)s:%(levelname)s:%(message)s',
-        level=logging.INFO
-    )
+def process_corpus(corpus):
+    """
+    Iterates through the given Corpus and constructs a token dictionary to
+    use
+    """
 
-    news_corpus = NewsCorpus()
-    dictionary = Dictionary(news_corpus)
+    dictionary = Dictionary(corpus)
     dictionary.filter_extremes(no_below=5, no_above=0.5, keep_n=1000)
     dictionary.compactify()
 
-    dictionary.save('tokens.dict')
+    tokens_path = os.path.join(os.path.dirname(__file__), "tokens.dict")
 
-if __name__ == '__main__':
-    main()
+    dictionary.save(tokens_path)
