@@ -6,8 +6,6 @@ from sklearn import svm
 from sklearn import cross_validation
 from sklearn.utils import shuffle
 
-from gensim import matutils
-
 from hyperopt import fmin, tpe, hp
 
 from .tfidf import TfidfVectorizer
@@ -32,7 +30,7 @@ class SVMClassifier():
         # Path for training input/output matrix
         self.matrix_path = os.path.join(self.base_path, "matrix.p")
 
-        # Initialize tf-idf vectorizer
+        # Initialize vectorizer
         self.vectorizer = TfidfVectorizer()
         self.no_of_features = self.vectorizer.no_of_features
 
@@ -43,10 +41,12 @@ class SVMClassifier():
         # Test data size
         self.test_data_size = 0.33
 
+        self.max_evals = 10
+
     def contruct_cost_function(self, input_matrix, output_matrix):
         def eval(c):
 
-            logging.debug("Training using c={}".format(c))
+            logging.info("Training using c={}".format(c))
 
             # Construct classifier
             classifier = svm.SVC(c, kernel="linear")
@@ -59,7 +59,7 @@ class SVMClassifier():
             )
 
             score = scores.mean()
-            logging.debug("Mean score={}".format(score))
+            logging.info("Mean score={}".format(score))
 
             # Return loss
             return 1-score
@@ -67,7 +67,7 @@ class SVMClassifier():
         return eval
 
     def load_matrix(self):
-        logging.debug("Loading dataset")
+        logging.info("Loading dataset")
 
         if not os.path.exists(self.matrix_path):
             # Obtain corpus data
@@ -75,18 +75,12 @@ class SVMClassifier():
 
             # Encode output label
             unique_labels = list(set(labels))
-            self.output_matrix = [self.unique_labels.index(x) for x in labels]
+            self.output_matrix = [unique_labels.index(x) for x in labels]
 
-            logging.debug("Obtaining tf-idf matrix for data")
-            input_matrix_sparse = [
-                self.vectorizer.doc2vector(x)
-                for x in documents
-            ]
-
-            self.input_matrix = matutils.corpus2dense(
-                input_matrix_sparse,
-                self.no_of_features
-            ).transpose()
+            logging.info("Obtaining tf-idf matrix for data")
+            self.input_matrix = self.vectorizer.obtain_feature_matrix(
+                documents
+            )
 
             pickle.dump(
                 (self.input_matrix, self.output_matrix),
@@ -123,13 +117,13 @@ class SVMClassifier():
             fn=eval,
             space=hp.lognormal("c", 0, 1),
             algo=tpe.suggest,
-            max_evals=10,
+            max_evals=self.max_evals,
         )
 
         best_c = best_parameters["c"]
 
         # Train SVM
-        logging.debug("Training SVM")
+        logging.info("Training SVM")
         classifier = svm.SVC(best_c, kernel="linear")
         classifier.fit(self.input_matrix, self.output_matrix)
 
@@ -139,7 +133,7 @@ class SVMClassifier():
     def load_clf(self):
         """ Load the pre-trained classifier """
 
-        logging.debug("Loading classifier data")
+        logging.info("Loading classifier data")
 
         if (not(os.path.exists(self.clf_path))):
             raise Exception("Pre trained classifier not found")
@@ -150,7 +144,7 @@ class SVMClassifier():
         self.classifier = pickle.load(open(self.clf_path, "rb"))
         self.labels = pickle.load(open(self.labels_path, "rb"))
 
-    def predict(self, text):
+    def predict(self, document):
         """
         Predict the class of given text
         """
@@ -158,13 +152,10 @@ class SVMClassifier():
         # Check and load classifier data
         self.load_clf()
 
-        if (text == ""):
+        if (document == ""):
             raise Exception("Empty text provided")
 
-        tf_idf_vector = matutils.sparse2full(
-            self.vectorizer.doc2vector(text),
-            self.no_of_features
-        ).reshape(1, -1)
+        tf_idf_vector = self.vectorizer.obtain_feature_vector(document)
 
         predicted_output = self.classifier.predict(tf_idf_vector)[0]
         return(self.labels[int(predicted_output)])
