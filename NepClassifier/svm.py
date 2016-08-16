@@ -9,7 +9,6 @@ from sklearn.utils import shuffle
 from hyperopt import fmin, tpe, hp
 
 from .tfidf import TfidfVectorizer
-from .datasets import NewsData
 
 
 class SVMClassifier():
@@ -66,35 +65,7 @@ class SVMClassifier():
 
         return eval
 
-    def load_matrix(self):
-        logging.info("Loading dataset")
-
-        if not os.path.exists(self.matrix_path):
-            # Obtain corpus data
-            documents, labels = shuffle(NewsData.load_data())
-
-            # Encode output label
-            unique_labels = list(set(labels))
-            self.output_matrix = [unique_labels.index(x) for x in labels]
-
-            logging.info("Obtaining tf-idf matrix for data")
-            self.input_matrix = self.vectorizer.obtain_feature_matrix(
-                documents
-            )
-
-            pickle.dump(
-                (self.input_matrix, self.output_matrix),
-                open(self.matrix_path, "wb")
-            )
-
-            # Dump output labels
-            pickle.dump(unique_labels, open(self.labels_path, "wb"))
-        else:
-            self.input_matrix, self.output_matrix = pickle.load(
-                open(self.matrix_path, "rb")
-            )
-
-    def train(self):
+    def train(self, dataset):
         """
         Train classifier and perform hyper paramater optimization
         """
@@ -104,8 +75,25 @@ class SVMClassifier():
             level=logging.INFO
         )
 
-        # Load input/output matrix
-        self.load_matrix()
+        # Obtain corpus data
+        logging.info("Loading dataset")
+        documents, labels = shuffle(dataset)
+
+        # Encode output label
+        logging.info("Encoding output")
+        unique_labels = list(set(labels))
+        self.output_matrix = [unique_labels.index(x) for x in labels]
+
+        logging.info("Obtaining tf-idf matrix for data")
+        self.input_matrix = self.vectorizer.obtain_feature_matrix(documents)
+
+        pickle.dump(
+            (self.input_matrix, self.output_matrix),
+            open(self.matrix_path, "wb")
+        )
+
+        # Dump output labels
+        pickle.dump(unique_labels, open(self.labels_path, "wb"))
 
         eval = self.contruct_cost_function(
             self.input_matrix,
