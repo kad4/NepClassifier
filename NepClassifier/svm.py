@@ -20,27 +20,21 @@ class SVMClassifier():
         # Base path
         self.base_path = os.path.dirname(__file__)
 
-        # Path for pre-trained classifier
-        self.clf_path = os.path.join(self.base_path, "svm.p")
+        # Path for pre-trained classifier and labels
+        self.clf_path = os.path.join(self.base_path, "svm.pkl")
 
-        # Path for pre-trained classifier
-        self.labels_path = os.path.join(self.base_path, "labels.p")
-
-        # Path for training input/output matrix
-        self.matrix_path = os.path.join(self.base_path, "matrix.p")
-
-        # Initialize vectorizer
+        # Initialize vectorizer to use
         self.vectorizer = TfidfVectorizer()
         self.no_of_features = self.vectorizer.no_of_features
 
         # Classifier to use
         self.classifier = None
-        self.labels = None
 
         # Test data size
         self.test_data_size = 0.33
 
         self.max_evals = 10
+        self.cross_validation_folds = 5
 
     def contruct_cost_function(self, input_matrix, output_matrix):
         def eval(c):
@@ -54,7 +48,7 @@ class SVMClassifier():
                 classifier,
                 input_matrix,
                 output_matrix,
-                cv=5
+                cv=self.cross_validation_folds
             )
 
             score = scores.mean()
@@ -76,28 +70,15 @@ class SVMClassifier():
         )
 
         # Obtain corpus data
-        logging.info("Loading dataset")
+        logging.info("Shuffling dataset")
         documents, labels = shuffle(dataset)
 
-        # Encode output label
-        logging.info("Encoding output")
-        unique_labels = list(set(labels))
-        self.output_matrix = [unique_labels.index(x) for x in labels]
-
-        logging.info("Obtaining tf-idf matrix for data")
+        logging.info("Obtaining feature matrix for data")
         self.input_matrix = self.vectorizer.obtain_feature_matrix(documents)
-
-        pickle.dump(
-            (self.input_matrix, self.output_matrix),
-            open(self.matrix_path, "wb")
-        )
-
-        # Dump output labels
-        pickle.dump(unique_labels, open(self.labels_path, "wb"))
 
         eval = self.contruct_cost_function(
             self.input_matrix,
-            self.output_matrix
+            labels
         )
 
         # Perform hyper paramater optimization
@@ -110,10 +91,12 @@ class SVMClassifier():
 
         best_c = best_parameters["c"]
 
+        logging.info("Best value obtained for c={}".format(best_c))
+
         # Train SVM
-        logging.info("Training SVM")
+        logging.info("Training SVM".format(best_c))
         classifier = svm.SVC(best_c, kernel="linear")
-        classifier.fit(self.input_matrix, self.output_matrix)
+        classifier.fit(self.input_matrix, labels)
 
         # Dumping trained SVM
         pickle.dump(classifier, open(self.clf_path, "wb"))
@@ -126,11 +109,7 @@ class SVMClassifier():
         if (not(os.path.exists(self.clf_path))):
             raise Exception("Pre trained classifier not found")
 
-        if (not(os.path.exists(self.labels_path))):
-            raise Exception("Labels for classifier not found")
-
         self.classifier = pickle.load(open(self.clf_path, "rb"))
-        self.labels = pickle.load(open(self.labels_path, "rb"))
 
     def predict(self, document):
         """
@@ -146,4 +125,4 @@ class SVMClassifier():
         tf_idf_vector = self.vectorizer.obtain_feature_vector(document)
 
         predicted_output = self.classifier.predict(tf_idf_vector)[0]
-        return(self.labels[int(predicted_output)])
+        return predicted_output
