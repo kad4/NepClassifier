@@ -25,7 +25,6 @@ class SVMClassifier():
 
         # Initialize vectorizer to use
         self.vectorizer = TfidfVectorizer()
-        self.no_of_features = self.vectorizer.no_of_features
 
         # Classifier to use
         self.classifier = None
