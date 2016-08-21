@@ -9,6 +9,7 @@ from sklearn.utils import shuffle
 from hyperopt import fmin, tpe, hp
 
 from .tfidf import TfidfVectorizer
+from .word2vec import Word2VecVectorizer
 
 
 class SVMClassifier():
@@ -16,7 +17,7 @@ class SVMClassifier():
     SVM based classifier for Nepali text
     """
 
-    def __init__(self):
+    def __init__(self, word2vec=False):
         # Base path
         self.base_path = os.path.dirname(__file__)
 
@@ -24,7 +25,10 @@ class SVMClassifier():
         self.clf_path = os.path.join(self.base_path, "svm.pkl")
 
         # Initialize vectorizer to use
-        self.vectorizer = TfidfVectorizer()
+        if word2vec:
+            self.vectorizer = Word2VecVectorizer()
+        else:
+            self.vectorizer = TfidfVectorizer()
 
         # Classifier to use
         self.classifier = None
@@ -58,10 +62,13 @@ class SVMClassifier():
 
         return eval
 
-    def train(self, dataset):
+    def train(self, documents, labels):
         """
         Train classifier and perform hyper paramater optimization
         """
+
+        if len(documents) != len(labels):
+            raise Exception("No of documents doesn't match the number of labels")
 
         logging.basicConfig(
             format='%(asctime)s:%(levelname)s:%(message)s',
@@ -70,11 +77,12 @@ class SVMClassifier():
 
         # Obtain corpus data
         logging.info("Shuffling dataset")
-        documents, labels = shuffle(dataset)
+        documents, labels = shuffle(documents, labels)
 
         logging.info("Obtaining feature matrix for data")
         self.input_matrix = self.vectorizer.obtain_feature_matrix(documents)
 
+        logging.info("Constructing evaluation function for hyper paramater optimization")
         eval = self.contruct_cost_function(
             self.input_matrix,
             labels
