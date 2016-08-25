@@ -63,6 +63,9 @@ class Word2VecVectorizer():
 
         feature_vector = np.zeros(self.no_of_features, dtype="float32")
 
+        if len(tokens) == 0:
+            return feature_vector
+
         for token in tokens:
             word_vector = self.obtain_word_vector(token)
 
