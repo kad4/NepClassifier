@@ -8,27 +8,21 @@ from sklearn.utils import shuffle
 
 from hyperopt import fmin, tpe, hp
 
-from .tfidf import TfidfVectorizer
-from .word2vec import Word2VecVectorizer
-
 
 class SVMClassifier():
     """
     SVM based classifier for Nepali text
     """
 
-    def __init__(self, word2vec=False):
+    def __init__(self, vectorizer):
         # Base path
         self.base_path = os.path.dirname(__file__)
 
         # Path for pre-trained classifier and labels
         self.clf_path = os.path.join(self.base_path, "svm.pkl")
 
-        # Initialize vectorizer to use
-        if word2vec:
-            self.vectorizer = Word2VecVectorizer()
-        else:
-            self.vectorizer = TfidfVectorizer()
+        # Assign vectorizer to class
+        self.vectorizer = vectorizer
 
         # Classifier to use
         self.classifier = None

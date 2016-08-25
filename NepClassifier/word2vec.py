@@ -22,12 +22,16 @@ class Word2VecVectorizer():
 
         self.model = None
 
-    def train(self, corpus):
+    def train(self, documents):
         """
         Train the word2vec for feature extraction on given corpus
         """
 
-        self.model = word2vec.Word2Vec(corpus)
+        document_tokens = [
+            self.stemmer.tokenize(document) for document in documents
+        ]
+
+        self.model = word2vec.Word2Vec(document_tokens)
         self.model.init_sims(replace=True)
 
         self.model.save(self.word2vec_data_path)
@@ -40,11 +44,11 @@ class Word2VecVectorizer():
             self.model = word2vec.Word2Vec.load(self.word2vec_data_path)
             self.no_of_features = self.model.syn0.shape[1]
 
-    def obtain_word_vector(self, stem):
+    def obtain_word_vector(self, word):
         self.load_model()
 
         try:
-            return self.model[stem]
+            return self.model[word]
         except Exception:
             return np.zeros(self.model.syn0.shape[1])
 
@@ -55,16 +59,16 @@ class Word2VecVectorizer():
 
         self.load_model()
 
-        stems = self.stemmer.get_stems(document)
+        tokens = self.stemmer.tokenize(document)
 
         feature_vector = np.zeros(self.no_of_features, dtype="float32")
 
-        for stem in stems:
-            word_vector = self.obtain_word_vector(stem)
+        for token in tokens:
+            word_vector = self.obtain_word_vector(token)
 
             feature_vector = np.add(feature_vector, word_vector)
 
-        feature_vector = np.divide(feature_vector, len(stems))
+        feature_vector = np.divide(feature_vector, len(tokens))
 
         return feature_vector
 

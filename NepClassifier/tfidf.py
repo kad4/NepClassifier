@@ -23,8 +23,9 @@ class TfidfVectorizer():
         self.no_of_features = None
         self.tf_idf_model = None
 
-    def construct_dictionary(self, corpus):
-        dictionary = Dictionary(corpus)
+    def construct_dictionary(self, documents):
+
+        dictionary = Dictionary(documents)
         dictionary.filter_extremes(no_below=5, no_above=0.5, keep_n=1000)
         dictionary.compactify()
 
