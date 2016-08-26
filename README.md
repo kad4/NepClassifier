@@ -1,7 +1,7 @@
 **NepClassifier**
 ===================
 
-**NepClassifier** is a [Support Vector Machine](https://en.wikipedia.org/wiki/Support_vector_machine) based Nepali news classifier.
+**NepClassifier** is a [Support Vector Machine](https://en.wikipedia.org/wiki/Support_vector_machine) based Nepali text classifier.
 
 
 ## Usage ##
