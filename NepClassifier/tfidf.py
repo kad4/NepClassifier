@@ -51,9 +51,10 @@ class TfidfVectorizer():
     def load_data(self):
 
         if not self.tf_idf_model:
-            if not os.path.exists(self.tf_idf_model):
+            if not os.path.exists(self.tf_idf_model_path):
                 raise Exception('TF-IDF model file not found')
 
+            self.dictionary = Dictionary.load(self.dictionary_path)
             self.tf_idf_model = TfidfModel.load(self.tf_idf_model_path)
 
     def doc2vector(self, document):
@@ -90,7 +91,7 @@ class TfidfVectorizer():
             for x in documents
         ]
 
-        no_of_features = (self.tf_idf_model.idfs)
+        no_of_features = len(self.tf_idf_model.idfs)
 
         input_matrix = matutils.corpus2dense(
             input_matrix_sparse,
