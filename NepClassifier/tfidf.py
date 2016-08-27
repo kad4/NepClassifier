@@ -1,4 +1,5 @@
 import os
+import logging
 
 from gensim import matutils
 from gensim.models import TfidfModel
@@ -15,39 +16,50 @@ class TfidfVectorizer():
     def __init__(self):
 
         self.base_path = os.path.dirname(__file__)
+        self.dictionary_path = os.path.join(self.base_path, "dictionary")
+        self.tf_idf_model_path = os.path.join(self.base_path, "tfidf")
 
-        self.tokens_path = os.path.join(self.base_path, "tokens")
-
-        self.stemmer = None
-        self.dictionary = None
-        self.no_of_features = None
+        self.stemmer = NepStemmer()
         self.tf_idf_model = None
 
-    def construct_dictionary(self, documents):
-        dictionary = Dictionary(documents)
-        dictionary.filter_extremes(no_below=5, no_above=0.5, keep_n=1000)
-        dictionary.compactify()
+    def get_tokens(self, document):
+        if not self.stemmer:
+            raise Exception("Stemmer not available")
 
-        dictionary.save(self.tokens_path)
+        return self.stemmer.get_stems(document)
+
+    def construct_model(self, documents):
+        logging.basicConfig(
+            format='%(asctime)s:%(levelname)s:%(message)s',
+            level=logging.INFO
+        )
+
+        logging.info("Obtaining word tokens")
+        tokens = [self.get_tokens(document) for document in documents]
+        # self.tf_idf_model = TfidfModel(tokens)
+
+        logging.info("Constructing dictionary")
+        self.dictionary = Dictionary(tokens)
+        self.dictionary.filter_extremes(no_below=5, no_above=0.5, keep_n=1000)
+        self.dictionary.compactify()
+        self.dictionary.save(self.dictionary_path)
+
+        logging.info("Constructing TF-IDF model")
+        self.tf_idf_model = TfidfModel(dictionary=self.dictionary)
+        self.tf_idf_model.save(self.tf_idf_model_path)
 
     def load_data(self):
 
-        if not self.dictionary:
+        if not self.tf_idf_model:
+            if not os.path.exists(self.tf_idf_model):
+                raise Exception('TF-IDF model file not found')
 
-            if not os.path.exists(self.tokens_path):
-                raise Exception('Dictionary file not found')
-
-            self.stemmer = NepStemmer()
-            self.dictionary = Dictionary.load(self.tokens_path)
-            self.no_of_features = len(self.dictionary)
-
-            # Construct the tf_idf_model
-            self.tf_idf_model = TfidfModel(dictionary=self.dictionary)
+            self.tf_idf_model = TfidfModel.load(self.tf_idf_model_path)
 
     def doc2vector(self, document):
         """ Returns the sparse tf-idf vector for given document """
 
-        tokens = self.stemmer.get_stems(document)
+        tokens = self.get_tokens(document)
         bag_of_words = self.dictionary.doc2bow(tokens)
 
         return (self.tf_idf_model[bag_of_words])
@@ -78,9 +90,11 @@ class TfidfVectorizer():
             for x in documents
         ]
 
+        no_of_features = (self.tf_idf_model.idfs)
+
         input_matrix = matutils.corpus2dense(
             input_matrix_sparse,
-            self.no_of_features
+            no_of_features
         ).transpose()
 
         return input_matrix
