@@ -23,13 +23,20 @@ class Word2VecVectorizer():
 
         self.model = None
 
+    def get_tokens(self, document):
+        """
+        Process the document and return the tokens present
+        """
+
+        return tokenize(document)
+
     def train(self, documents):
         """
         Train the word2vec for feature extraction on given corpus
         """
 
         document_tokens = [
-            tokenize(document) for document in documents
+            self.get_tokens(document) for document in documents
         ]
 
         self.model = word2vec.Word2Vec(document_tokens)
@@ -60,7 +67,7 @@ class Word2VecVectorizer():
 
         self.load_model()
 
-        tokens = tokenize(document)
+        tokens = self.get_tokens(document)
 
         feature_vector = np.zeros(self.no_of_features, dtype="float32")
 
