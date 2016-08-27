@@ -5,7 +5,6 @@ import numpy as np
 from gensim.models import word2vec
 
 from .stemmer import NepStemmer
-from .tokenizer import tokenize
 
 
 class Word2VecVectorizer():
@@ -28,7 +27,7 @@ class Word2VecVectorizer():
         Process the document and return the tokens present
         """
 
-        return tokenize(document)
+        return self.stemmer.get_stems(document)
 
     def train(self, documents):
         """
@@ -39,7 +38,13 @@ class Word2VecVectorizer():
             self.get_tokens(document) for document in documents
         ]
 
-        self.model = word2vec.Word2Vec(document_tokens)
+        self.model = word2vec.Word2Vec(
+            document_tokens,
+            sg=1,
+            size=300,
+            window=10
+        )
+
         self.model.init_sims(replace=True)
 
         self.model.save(self.word2vec_data_path)
