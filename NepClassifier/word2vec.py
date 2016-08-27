@@ -5,6 +5,7 @@ import numpy as np
 from gensim.models import word2vec
 
 from .stemmer import NepStemmer
+from .tokenizer import tokenize
 
 
 class Word2VecVectorizer():
@@ -28,7 +29,7 @@ class Word2VecVectorizer():
         """
 
         document_tokens = [
-            self.stemmer.tokenize(document) for document in documents
+            tokenize(document) for document in documents
         ]
 
         self.model = word2vec.Word2Vec(document_tokens)
@@ -59,7 +60,7 @@ class Word2VecVectorizer():
 
         self.load_model()
 
-        tokens = self.stemmer.tokenize(document)
+        tokens = tokenize(document)
 
         feature_vector = np.zeros(self.no_of_features, dtype="float32")
 

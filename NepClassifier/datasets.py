@@ -2,8 +2,6 @@ import os
 import gzip
 import pickle
 
-from .stemmer import NepStemmer
-
 
 class NeptextData():
     """
@@ -32,19 +30,3 @@ class NeptextData():
             ))
 
             return documents, labels
-
-
-class NeptextCorpus():
-    """
-    Corpus for Nepali text dataset
-    """
-
-    def __init__(self):
-        self.stemmer = NepStemmer()
-        self.documents, _ = NeptextData.load_data()
-
-    def __iter__(self):
-        # Yield tokens
-        for document in self.documents:
-            tokens = self.stemmer.get_stems(document)
-            yield tokens

@@ -1,6 +1,7 @@
-import re
 import os
 import json
+
+from .tokenizer import tokenize
 
 
 class NepStemmer():
@@ -46,21 +47,6 @@ class NepStemmer():
                 break
         return word
 
-    def tokenize(self, text):
-        """ Tokenize the given text """
-
-        # Removing unnecessary items
-        remove_exp = re.compile("[\d]+")
-        removed_text = remove_exp.sub("", text)
-
-        # Extracting words from text
-        # Splits complex combinations in single step
-        extract_exp = re.compile("[\s।|!?.,:;%+\-–*/'‘’“\"()]+")
-        words = extract_exp.split(removed_text)
-
-        # Returns the non-empty items only
-        return([word for word in words if word != ''])
-
     def stem(self, word):
         """ Returns the stem of the given word """
 
@@ -74,6 +60,6 @@ class NepStemmer():
         """ Returns stem list from a given text """
 
         # Obtain tokens of the text
-        tokens = self.tokenize(text)
+        tokens = tokenize(text)
 
         return([self.stem(token) for token in tokens])
