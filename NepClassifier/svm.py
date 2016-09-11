@@ -2,11 +2,40 @@ import os
 import logging
 import pickle
 
+from statistics import mean
+
 from sklearn import svm
 from sklearn import cross_validation
 from sklearn.utils import shuffle
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 from hyperopt import fmin, tpe, hp
+
+
+logging.basicConfig(
+    format='%(asctime)s:%(levelname)s:%(message)s',
+    level=logging.INFO
+)
+
+logger = logging.getLogger(__name__)
+hdlr = logging.FileHandler("svm.log")
+logger.addHandler(hdlr)
+
+
+def calculate_scores(estimator, x, y):
+
+    # Calculate the predicted output
+    y_pred = estimator.predict(x)
+
+    accuracy = accuracy_score(y, y_pred)
+    precision, recall, fscore, _ = precision_recall_fscore_support(y, y_pred)
+
+    logger.info("Accuracy Score: {}".format(accuracy))
+    logger.info("Precision: {}".format(mean(precision)))
+    logger.info("Recall: {}".format(mean(recall)))
+    logger.info("F-Score: {}".format(mean(fscore)))
+
+    return accuracy
 
 
 class SVMClassifier():
@@ -36,7 +65,7 @@ class SVMClassifier():
     def contruct_cost_function(self, input_matrix, output_matrix):
         def eval(c):
 
-            logging.info("Training using c={}".format(c))
+            logger.info("Training using c={}".format(c))
 
             # Construct classifier
             classifier = svm.SVC(c, kernel="linear")
@@ -45,11 +74,12 @@ class SVMClassifier():
                 classifier,
                 input_matrix,
                 output_matrix,
-                cv=self.cross_validation_folds
+                cv=self.cross_validation_folds,
+                scoring=calculate_scores
             )
 
             score = scores.mean()
-            logging.info("Mean score={}".format(score))
+            logger.info("Mean score={}".format(score))
 
             # Return loss
             return 1-score
@@ -64,19 +94,15 @@ class SVMClassifier():
         if len(documents) != len(labels):
             raise Exception("No of documents doesn't match the number of labels")
 
-        logging.basicConfig(
-            format='%(asctime)s:%(levelname)s:%(message)s',
-            level=logging.INFO
-        )
 
         # Obtain corpus data
-        logging.info("Shuffling dataset")
+        logger.info("Shuffling dataset")
         documents, labels = shuffle(documents, labels)
 
-        logging.info("Obtaining feature matrix for data")
+        logger.info("Obtaining feature matrix for data")
         self.input_matrix = self.vectorizer.obtain_feature_matrix(documents)
 
-        logging.info("Constructing evaluation function for hyper paramater optimization")
+        logger.info("Constructing evaluation function for hyper paramater optimization")
         eval = self.contruct_cost_function(
             self.input_matrix,
             labels
@@ -92,10 +118,10 @@ class SVMClassifier():
 
         best_c = best_parameters["c"]
 
-        logging.info("Best value obtained for c={}".format(best_c))
+        logger.info("Best value obtained for c={}".format(best_c))
 
         # Train SVM
-        logging.info("Training SVM".format(best_c))
+        logger.info("Training SVM".format(best_c))
         classifier = svm.SVC(best_c, kernel="linear")
         classifier.fit(self.input_matrix, labels)
 
@@ -105,7 +131,7 @@ class SVMClassifier():
     def load_clf(self):
         """ Load the pre-trained classifier """
 
-        logging.info("Loading classifier data")
+        logger.info("Loading classifier data")
 
         if (not(os.path.exists(self.clf_path))):
             raise Exception("Pre trained classifier not found")
