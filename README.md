@@ -50,9 +50,9 @@ The statistics for data used
 
 | Category      | No. of Documents |
 | ------------- | -------------    |
-| automobile    | 283              |
-| bank          | 837              |
-| casualty      | 491              |
+| automobiles   | 283              |
+| finance       | 837              |
+| crime         | 491              |
 | employment    | 206              |
 | entertainment | 2068             |
 | health        | 1021             |
