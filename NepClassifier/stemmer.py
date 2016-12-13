@@ -1,5 +1,4 @@
 import os
-import json
 
 from .tokenizer import tokenize
 
@@ -31,9 +30,20 @@ class NepStemmer():
             self.filter_set = set(file.read().split("\n"))
 
         # Read suffix list
-        suffixes_path = os.path.join(base_path, 'suffixes.json')
+        suffixes_path = os.path.join(base_path, 'suffixes.txt')
         with open(suffixes_path, 'r') as file:
-            self.suffixes = json.load(file)
+            lines = file.readlines()
+
+        self.suffixes = {
+        }
+
+        for line in lines:
+            suffix, key = line.replace("\n", "").split("|")
+
+            if key not in self.suffixes:
+                self.suffixes[key] = [suffix]
+            else:
+                self.suffixes[key].append(suffix)
 
     def remove_suffix(self, word):
         """ Removes suffixes from a given word """
