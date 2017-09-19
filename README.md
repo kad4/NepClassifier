@@ -63,3 +63,8 @@ The statistics for data used
 | technology    | 1221             |
 | tourism       | 772              |
 | others        | 488              |
+
+
+## Paper ##
+
+http://conference.ioe.edu.np/ioegc2016/papers/IOEGC-2016-42.pdf
